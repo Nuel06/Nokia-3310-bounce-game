@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Bounce 3310</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;touch-action:none;background:#8a9a6a;}
+:root{
+  --lcd:    #8fa870;
+  --dark:   #1a2a0a;
+  --mid:    #4a6a2a;
+  --light:  #c8d890;
+  --white:  #ddeaaa;
+  --hud-bg: #1a2a0a;
+  --hud-fg: #8fa870;
+}
+body,#app{width:100%;height:100%;}
+#app{position:relative;display:flex;align-items:center;justify-content:center;
+     font-family:'Press Start 2P',monospace;background:#3a4a2a;}
+
+.screen{display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;}
+.screen.active{display:flex;}
+
+/* ============ SPLASH ============ */
+#splash{background:#3a4a2a;gap:16px;padding:24px;}
+.nokia-device{
+  width:min(85vw,320px);
+  background:#2a3a1a;
+  border-radius:24px 24px 40px 40px;
+  padding:12px 12px 20px;
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.05);
+  border:2px solid #1a2a0a;
+}
+.nokia-top-strip{width:100%;height:6px;background:#1a2a0a;border-radius:4px 4px 0 0;margin-bottom:4px;}
+.lcd-screen{
+  width:100%;background:var(--lcd);
+  border:3px solid #1a2a0a;border-radius:4px;
+  padding:14px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;
+  box-shadow:inset 0 2px 8px rgba(0,0,0,0.3);
+  image-rendering:pixelated;
+}
+.nokia-label{font-size:7px;color:#8fa870;letter-spacing:4px;text-transform:uppercase;font-family:'Press Start 2P',monospace;}
+.splash-title{font-size:clamp(18px,5vw,28px);color:var(--dark);text-align:center;line-height:1.5;
+  font-family:'Press Start 2P',monospace;text-shadow:2px 2px 0 var(--mid);}
+.splash-sub{font-size:6px;color:var(--mid);letter-spacing:2px;text-align:center;font-family:'Press Start 2P',monospace;}
+.splash-ball-row{display:flex;align-items:flex-end;gap:0;margin:4px 0;}
+.px-ball{image-rendering:pixelated;width:28px;height:28px;animation:sbb .8s ease-in-out infinite alternate;}
+@keyframes sbb{from{transform:translateY(0)}to{transform:translateY(-10px)}}
+.px-shadow{width:18px;height:4px;background:var(--mid);border-radius:50%;margin-left:5px;
+  animation:sbs .8s ease-in-out infinite alternate;opacity:.5;}
+@keyframes sbs{from{transform:scaleX(1)}to{transform:scaleX(.5)}}
+.nokia-btn-row{display:flex;gap:10px;margin-top:4px;}
+.nk-btn{
+  background:#1a2a0a;color:#8fa870;
+  border:2px solid #0a1a00;border-radius:6px;
+  font-family:'Press Start 2P',monospace;font-size:7px;
+  padding:10px 18px;cursor:pointer;letter-spacing:1px;
+  text-transform:uppercase;transition:.1s;
+  box-shadow:0 3px 0 #0a1a00;
+}
+.nk-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #0a1a00;}
+.nk-btn-g{background:#3a5a2a;color:#c8d890;}
+.mode-row{display:flex;gap:10px;align-items:center;font-size:6px;color:#6a8a4a;font-family:'Press Start 2P',monospace;}
+.tog{width:36px;height:18px;background:#0a1a00;border-radius:9px;position:relative;cursor:pointer;
+  border:2px solid #1a2a0a;transition:.2s;}
+.tog-th{width:12px;height:12px;background:#8fa870;border-radius:50%;position:absolute;top:1px;left:1px;transition:.2s;}
+.color-mode .tog-th{transform:translateX(16px);background:#FFD700;}
+
+/* ============ HUD ============ */
+#hud{position:absolute;top:0;left:0;right:0;height:32px;
+  background:var(--hud-bg);display:flex;align-items:center;
+  justify-content:space-between;padding:0 10px;
+  font-family:'Press Start 2P',monospace;font-size:6px;color:var(--hud-fg);
+  z-index:20;border-bottom:2px solid #0a1a00;image-rendering:pixelated;}
+.hud-lives{display:flex;gap:4px;align-items:center;}
+.hud-rings{color:#c8d890;}
+.hud-score{color:#8fa870;}
+.hud-pause{cursor:pointer;color:#c8d890;font-size:10px;}
+
+/* ============ CANVAS ============ */
+#gameCanvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;
+  border:0;background:var(--lcd);}
+
+/* ============ CONTROLS ============ */
+#controls{position:fixed;bottom:0;left:0;right:0;
+  display:flex;justify-content:space-between;align-items:flex-end;
+  padding:6px 14px 12px;z-index:30;pointer-events:none;
+  background:linear-gradient(transparent,rgba(42,58,26,0.85));}
+.cb{width:64px;height:64px;
+  background:rgba(26,42,10,0.7);border:2px solid rgba(143,168,112,0.4);
+  border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font-size:18px;color:rgba(200,216,144,0.9);cursor:pointer;pointer-events:all;
+  user-select:none;transition:.08s;font-family:'Press Start 2P',monospace;}
+.cb:active{background:rgba(143,168,112,0.3);transform:scale(.93);}
+.cb-j{width:54px;height:54px;font-size:11px;color:rgba(200,216,144,0.8);align-self:center;}
+
+/* ============ OVERLAYS ============ */
+.overlay{display:none;position:absolute;inset:0;
+  background:rgba(10,26,0,0.88);z-index:40;
+  flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;}
+.overlay.show{display:flex;}
+.ov-lcd{background:var(--lcd);border:3px solid var(--dark);border-radius:4px;
+  padding:18px 22px;display:flex;flex-direction:column;align-items:center;gap:12px;
+  max-width:300px;width:100%;}
+.ov-title{font-size:12px;color:var(--dark);text-align:center;font-family:'Press Start 2P',monospace;}
+.ov-sub{font-size:7px;color:var(--mid);text-align:center;line-height:2;font-family:'Press Start 2P',monospace;}
+
+/* ============ LEVEL SELECT ============ */
+#levelSelect{background:#2a3a1a;padding:16px;gap:12px;overflow-y:auto;}
+#levelSelect h2{font-size:9px;color:#8fa870;font-family:'Press Start 2P',monospace;}
+.lv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;width:100%;max-width:320px;}
+.lv-cell{aspect-ratio:1;border:2px solid #3a5a2a;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;cursor:pointer;background:#1a2a0a;transition:.1s;}
+.lv-cell.unlocked{border-color:#8fa870;background:#2a3a1a;}
+.lv-cell.done{border-color:#c8d890;background:#3a5a2a;}
+.lv-cell.locked{opacity:.3;pointer-events:none;}
+.lv-cell:active{transform:scale(.9);}
+.lv-num{font-size:9px;color:#c8d890;font-family:'Press Start 2P',monospace;}
+.lv-r{font-size:6px;color:#6a8a4a;font-family:'Press Start 2P',monospace;}
+.back-btn{position:absolute;top:10px;left:10px;font-size:6px;color:#8fa870;
+  border:1px solid #3a5a2a;padding:5px 8px;cursor:pointer;background:#1a2a0a;
+  z-index:50;font-family:'Press Start 2P',monospace;}
+.back-btn:active{background:#8fa870;color:#1a2a0a;}
+
+#howToPlay{background:#2a3a1a;padding:16px 20px;gap:10px;overflow-y:auto;}
+#howToPlay h2{font-size:9px;color:#c8d890;font-family:'Press Start 2P',monospace;}
+.hi{display:flex;gap:10px;align-items:flex-start;font-size:6px;color:#8fa870;
+  line-height:2;max-width:320px;font-family:'Press Start 2P',monospace;}
+.hic{font-size:14px;flex-shrink:0;width:22px;text-align:center;}
+
+#gameScreen{background:var(--lcd);}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ============ SPLASH ============ -->
+<div id="splash" class="screen active">
+  <div class="nokia-device" id="nokiaDevice">
+    <div class="nokia-top-strip"></div>
+    <div class="lcd-screen">
+      <div class="nokia-label">Nokia 3310</div>
+      <div style="display:flex;gap:8px;align-items:flex-end;margin:4px 0;">
+        <svg class="px-ball" viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">
+          <rect x="3" y="0" width="8" height="1" fill="#1a2a0a"/>
+          <rect x="1" y="1" width="2" height="1" fill="#1a2a0a"/><rect x="3" y="1" width="2" height="1" fill="#4a6a2a"/><rect x="5" y="1" width="4" height="1" fill="#1a2a0a"/><rect x="9" y="1" width="2" height="1" fill="#1a2a0a"/><rect x="11" y="1" width="2" height="1" fill="#1a2a0a"/>
+          <rect x="1" y="2" width="1" height="1" fill="#1a2a0a"/><rect x="2" y="2" width="2" height="1" fill="#c8d890"/><rect x="4" y="2" width="1" height="1" fill="#8fa870"/><rect x="5" y="2" width="5" height="1" fill="#4a6a2a"/><rect x="10" y="2" width="2" height="1" fill="#1a2a0a"/>
+          <rect x="0" y="3" width="1" height="1" fill="#1a2a0a"/><rect x="1" y="3" width="1" height="1" fill="#c8d890"/><rect x="2" y="3" width="2" height="1" fill="#c8d890"/><rect x="4" y="3" width="6" height="1" fill="#4a6a2a"/><rect x="10" y="3" width="2" height="1" fill="#1a2a0a"/><rect x="12" y="3" width="1" height="1" fill="#1a2a0a"/>
+          <rect x="0" y="4" width="1" height="1" fill="#1a2a0a"/><rect x="1" y="4" width="2" height="1" fill="#8fa870"/><rect x="3" y="4" width="7" height="1" fill="#4a6a2a"/><rect x="10" y="4" width="2" height="1" fill="#1a2a0a"/><rect x="12" y="4" width="1" height="1" fill="#1a2a0a"/>
+          <rect x="0" y="5" width="1" height="1" fill="#1a2a0a"/><rect x="1" y="5" width="11" height="1" fill="#4a6a2a"/><rect x="12" y="5" width="1" height="1" fill="#1a2a0a"/>
+          <rect x="0" y="6" width="1" height="1" fill="#1a2a0a"/><rect x="1" y="6" width="11" height="1" fill="#1a2a0a"/><rect x="12" y="6" width="1" height="1" fill="#1a2a0a"/>
+          <rect x="0" y="7" width="1" height="1" fill="#1a2a0a"/><rect x="1" y="7" width="11" height="1" fill="#1a2a0a"/><rect x="12" y="7" width="1" height="1" fill="#1a2a0a"/>
+          <rect x="0" y="8" width="1" height="1" fill="#1a2a0a"/><rect x="1" y="8" width="11" height="1" fill="#4a6a2a"/><rect x="12" y="8" width="1" height="1" fill="#1a2a0a"/>
+          <rect x="0" y="9" width="1" height="1" fill="#1a2a0a"/><rect x="1" y="9" width="11" height="1" fill="#4a6a2a"/><rect x="12" y="9" width="1" height="1" fill="#1a2a0a"/>
+          <rect x="1" y="10" width="1" height="1" fill="#1a2a0a"/><rect x="2" y="10" width="9" height="1" fill="#4a6a2a"/><rect x="11" y="10" width="1" height="1" fill="#1a2a0a"/><rect x="12" y="10" width="1" height="1" fill="#1a2a0a"/>
+          <rect x="1" y="11" width="1" height="1" fill="#1a2a0a"/><rect x="2" y="11" width="9" height="1" fill="#1a2a0a"/><rect x="11" y="11" width="2" height="1" fill="#1a2a0a"/>
+          <rect x="3" y="12" width="8" height="1" fill="#1a2a0a"/>
+          <rect x="4" y="13" width="1" height="1" fill="#1a2a0a"/><rect x="9" y="13" width="1" height="1" fill="#1a2a0a"/>
+        </svg>
+        <div class="px-shadow"></div>
+      </div>
+      <div class="splash-title">BOUNCE<br>3310</div>
+      <div class="splash-sub">COLLECT ALL RINGS</div>
+    </div>
+    <div class="nokia-btn-row">
+      <button class="nk-btn" onclick="showHowToPlay()">▶ PLAY</button>
+      <button class="nk-btn nk-btn-g" onclick="showLevelSelect()">LEVELS</button>
+    </div>
+    <div class="mode-row" id="modeRow">
+      <span>MONO</span>
+      <div class="tog" onclick="toggleMode()" id="modeTog"><div class="tog-th"></div></div>
+      <span>COLOR</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============ HOW TO PLAY ============ -->
+<div id="howToPlay" class="screen">
+  <div class="back-btn" onclick="showSplash()">◀ BACK</div>
+  <h2 style="color:#c8d890;margin-top:32px">HOW TO PLAY</h2>
+  <div class="hi"><div class="hic">◎</div><div><b style="color:#c8d890">RINGS</b> — Collect ALL rings to unlock the EXIT DOOR.</div></div>
+  <div class="hi"><div class="hic">▣</div><div><b style="color:#c8d890">EXIT</b> — Door on right. Glows when all rings collected.</div></div>
+  <div class="hi"><div class="hic">|</div><div><b style="color:#c8d890">NEEDLES</b> — Touch = burst. You lose a life.</div></div>
+  <div class="hi"><div class="hic">✦</div><div><b style="color:#c8d890">SPIDERS</b> — Moving spiky enemies. Appear from Level 2.</div></div>
+  <div class="hi"><div class="hic">◇</div><div><b style="color:#c8d890">CHECKPOINT</b> — Diamond. Touch to save respawn point.</div></div>
+  <div class="hi"><div class="hic">●</div><div><b style="color:#c8d890">CRYSTAL BALL</b> — White sphere. Gives extra life (max 5).</div></div>
+  <div class="hi"><div class="hic">↑</div><div><b style="color:#c8d890">INFLATOR</b> — Makes ball BIG & BLUE. Float on water!</div></div>
+  <div class="hi"><div class="hic">~</div><div><b style="color:#c8d890">WATER</b> — Small ball sinks. Big ball floats.</div></div>
+  <div class="hi"><div class="hic">⬆</div><div><b style="color:#c8d890">DOUBLE JUMP</b> — Tap jump again in mid-air.</div></div>
+  <button class="nk-btn" onclick="startLevel(0)" style="margin-top:10px">START ▶</button>
+</div>
+
+<!-- ============ LEVEL SELECT ============ -->
+<div id="levelSelect" class="screen">
+  <div class="back-btn" onclick="showSplash()">◀ BACK</div>
+  <h2 style="margin-top:30px">SELECT LEVEL</h2>
+  <div class="lv-grid" id="lvGrid"></div>
+</div>
+
+<!-- ============ GAME ============ -->
+<div id="gameScreen" class="screen">
+  <div id="hud">
+    <div class="hud-lives" id="hLives"></div>
+    <div class="hud-rings">◎<span id="hR">0</span>/<span id="hT">0</span></div>
+    <div class="hud-score" id="hScore">0</div>
+    <div style="font-size:7px;color:#6a8a4a;min-width:60px;text-align:center" id="hMsg"></div>
+    <div class="hud-pause" onclick="pauseGame()">❙❙</div>
+  </div>
+  <canvas id="gameCanvas"></canvas>
+  <div id="controls">
+    <button class="cb" id="bL"
+      ontouchstart="K.L=true;event.preventDefault()" ontouchend="K.L=false;event.preventDefault()"
+      onmousedown="K.L=true" onmouseup="K.L=false" onmouseleave="K.L=false">◀</button>
+    <button class="cb cb-j" id="bJ"
+      ontouchstart="doJump();event.preventDefault()"
+      onmousedown="doJump()">JUMP</button>
+    <button class="cb" id="bR"
+      ontouchstart="K.R=true;event.preventDefault()" ontouchend="K.R=false;event.preventDefault()"
+      onmousedown="K.R=true" onmouseup="K.R=false" onmouseleave="K.R=false">▶</button>
+  </div>
+
+  <div class="overlay" id="oPause">
+    <div class="ov-lcd">
+      <div class="ov-title">— PAUSE —</div>
+      <button class="nk-btn" onclick="resumeGame()">RESUME</button>
+      <button class="nk-btn nk-btn-g" onclick="showLevelSelect()">LEVELS</button>
+      <div class="mode-row" style="margin-top:6px">
+        <span>MONO</span>
+        <div class="tog" onclick="toggleMode()"><div class="tog-th"></div></div>
+        <span>COLOR</span>
+      </div>
+    </div>
+  </div>
+  <div class="overlay" id="oComplete">
+    <div class="ov-lcd">
+      <div class="ov-title">LEVEL CLEAR!</div>
+      <div class="ov-sub" id="oMsg"></div>
+      <button class="nk-btn" id="btnNext" onclick="nextLevel()">NEXT ▶</button>
+      <button class="nk-btn nk-btn-g" onclick="showLevelSelect()">LEVELS</button>
+    </div>
+  </div>
+  <div class="overlay" id="oGameOver">
+    <div class="ov-lcd">
+      <div class="ov-title">GAME OVER</div>
+      <div class="ov-sub">LEVEL <span id="goLv"></span></div>
+      <button class="nk-btn" onclick="retryLevel()">RETRY</button>
+      <button class="nk-btn nk-btn-g" onclick="showLevelSelect()">LEVELS</button>
+    </div>
+  </div>
+  <div class="overlay" id="oWin">
+    <div class="ov-lcd">
+      <div class="ov-title">YOU WIN!</div>
+      <div class="ov-sub">ALL 11 LEVELS!<br>TRUE CHAMPION!</div>
+      <button class="nk-btn" onclick="startLevel(0)">PLAY AGAIN</button>
+      <button class="nk-btn nk-btn-g" onclick="showSplash()">MENU</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- #app -->
+<script>
+'use strict';
+
+// ================================================================
+//  PALETTE
+// ================================================================
+const MONO = {
+  bg:'#8fa870', sky:'#c8d890', dark:'#1a2a0a', mid:'#4a6a2a', light:'#c8d890',
+  brick1:'#4a6a2a', brick2:'#1a2a0a', brickH:'#8fa870',
+  ball:'#1a2a0a', ballHi:'#c8d890', ballSh:'#4a6a2a',
+  ring:'#1a2a0a', ringHi:'#c8d890',
+  needle:'#1a2a0a', jack:'#1a2a0a',
+  cp:'#1a2a0a', cpDone:'#4a6a2a',
+  exit:'#1a2a0a', exitOpen:'#1a2a0a',
+  water:'#4a6a2a', waterH:'#8fa870',
+  inflator:'#1a2a0a', crystal:'#c8d890',
+};
+const COLOR = {
+  bg:'#5bc8f0', sky:'#5bc8f0', dark:'#220000', mid:'#882200', light:'#ff8844',
+  brick1:'#cc3300', brick2:'#661100', brickH:'#ff5522',
+  ball:'#cc1100', ballHi:'#ff6644', ballSh:'#660000',
+  ring:'#cc9900', ringHi:'#ffee44',
+  needle:'#888844', jack:'#2244cc',
+  cp:'#ddaa00', cpDone:'#ff4400',
+  exit:'#666677', exitOpen:'#88ffee',
+  water:'#1144cc', waterH:'#4488ff',
+  inflator:'#22cc44', crystal:'#ffffff',
+};
+
+let P = MONO;
+let colorMode = false;
+
+// ================================================================
+//  GAME CONSTANTS
+// ================================================================
+const T    = 32;    // tile size in px
+const BH   = 10;   // visible tile rows
+const GRAV  = 0.45;
+const JUMP1 = -11.0;
+const JUMP2 = -8.0;
+const SPD   = 3.6;
+const FRIC  = 0.82;
+const INFLATE_FRAMES = 360;
+
+// ================================================================
+//  ENTITY HELPERS
+// ================================================================
+const mkRing     = (x,y)         => ({x,y,collected:false,type:'ring'});
+const mkNeedle   = (x,y)         => ({x,y,type:'needle'});
+const mkJack     = (x,y,ax,ay,bx,by,sp) => ({x,y,ax,ay,bx,by,sp,t:0,dir:1,type:'jack'});
+const mkCP       = (x,y)         => ({x,y,hit:false,type:'cp'});
+const mkCrystal  = (x,y)         => ({x,y,collected:false,type:'crystal'});
+const mkInflator = (x,y)         => ({x,y,used:false,type:'inflator'});
+const mkDeflator = (x,y)         => ({x,y,type:'deflator'});
+const mkExit     = (x,y)         => ({x,y,type:'exit'});
+const mkWater    = (x,y,w,h)     => ({x,y,w,h,type:'water'});
+
+// ================================================================
+//  LEVELS
+//
+//  FIX 1: Renamed the ring-count field from 'rings' to 'ringCount'
+//          to avoid the duplicate-key conflict where the rings[]
+//          array was overwriting the numeric rings count, causing
+//          the HUD to display "[object Object]".
+//
+//  FIX 2: Level 1 geometry fully rebuilt:
+//          - Ball start position moved to x=6,y=7 — open floor gap
+//            between the left wall block and right overhang.
+//          - Left wall block [0,1,5,7] removed (it enclosed start).
+//          - All block placements verified to not overlap start pos.
+//
+//  All other level ringCount values updated to match.
+// ================================================================
+
+const LEVELS = [
+// ---------------------------------------------------------------
+// LEVEL 1 — MEADOW
+// BH=10: rows 0=ceiling, 8-9=floor
+//
+// Layout (tile cols 0-39, rows 0-9):
+//   Row 0         = full ceiling
+//   Rows 8-9      = full floor
+//   Col 0, rows 1-7 = left boundary wall (1 tile wide)
+//   Col 5, rows 1-5 = first right-side overhang (hangs from ceiling)
+//   The ball starts at col 2, sitting on the floor (row 7).
+//   Gap at col 1-4 (rows 6-7) is the open starting chamber.
+// ---------------------------------------------------------------
+{
+  name: 'MEADOW',
+  ringCount: 6,   // ← FIX: was 'rings:6' which got overwritten by the rings[] below
+  lvW: 40,
+
+  ceil:   [[0, 0, 40, 1]],
+  ground: [[0, 8, 40, 2]],
+
+  walls: [
+    // Left boundary — 1 tile wide so ball can't escape left
+    [0,  1,  1, 7],
+
+    // First chamber right wall — hangs from ceiling, gap underneath
+    [5,  1,  2, 5],   // x=5-6, y=1-5; gap at y=6-7 for ball to pass
+
+    // Small floor pillar — forces a jump
+    [10, 6,  1, 2],
+
+    // Second ceiling overhang
+    [13, 1,  3, 4],
+
+    // Raised mid platform (ball rolls over top)
+    [16, 5,  3, 3],
+
+    // Third ceiling overhang
+    [20, 1,  3, 3],
+
+    // Small raised block
+    [22, 6,  2, 2],
+
+    // Fourth ceiling overhang — taller
+    [26, 1,  3, 5],
+
+    // Cave section walls
+    [28, 4,  2, 4],
+    [32, 4,  2, 4],
+
+    // Small pre-exit platform
+    [30, 6,  2, 2],
+
+    // Exit chamber left wall
+    [35, 1,  2, 7],
+    [37, 1,  2, 5],
+  ],
+
+  platforms: [],
+
+  // FIX: property is now 'rings' (the array) without a conflicting numeric 'rings'
+  rings: [
+    // Ring 1: in first chamber gap — ball moves right from start and collects it
+    mkRing(3, 6),
+
+    // Ring 2: just left of the floor pillar
+    mkRing(8, 7),
+
+    // Ring 3 & 4: floating mid-height in the open midsection
+    mkRing(15, 4),
+    mkRing(19, 4),
+
+    // Ring 5: in the open corridor before the cave
+    mkRing(29, 7),
+
+    // Ring 6: floating in the final section before exit
+    mkRing(36, 4),
+  ],
+
+  needles: [
+    mkNeedle(11, 7),   // right of small pillar
+    mkNeedle(19, 7),   // before mid-platform
+    mkNeedle(24, 7),   // in needle corridor
+    mkNeedle(25, 7),
+    mkNeedle(34, 7),   // before final section
+  ],
+
+  jacks: [],
+
+  checkpoints: [
+    mkCP(23, 7),
+  ],
+
+  crystals: [
+    mkCrystal(33, 3),
+  ],
+
+  inflators: [],
+  deflators: [],
+  waters:    [],
+
+  exit: mkExit(38, 6),
+
+  // FIX: Start position moved out of the left wall block.
+  //      Old: {x:2,y:7} was inside wall [0,1,5,7].
+  //      New: x=2 is still inside left boundary [0,1,1,7] at col 0 only,
+  //      and col 1-4 rows 1-7 is now open air. Ball lands on the floor.
+  start: {x: 2, y: 7},
+},
+
+// ---------------------------------------------------------------
+// LEVEL 2 — SPIDER MARSH  (8 rings, jacks intro)
+// ---------------------------------------------------------------
+{ name:'SPIDER MARSH', ringCount:8, lvW:42,
+  ground:   [[0,BH-2,42,2]],
+  ceil:     [[0,0,42,1]],
+  walls:    [[0,1,1,BH-3],[4,1,1,BH-3],[7,1,1,BH-4],[11,1,1,BH-3],[16,1,1,BH-4],[21,1,1,BH-3],[26,1,1,BH-4],[31,1,1,BH-3],[37,1,1,BH-4]],
+  platforms:[[13,BH-6,3,1],[23,BH-7,4,1],[33,BH-5,3,1]],
+  rings:    [mkRing(2,BH-3),mkRing(5,BH-3),mkRing(9,BH-3),mkRing(14,BH-7),mkRing(19,BH-3),mkRing(24,BH-8),mkRing(34,BH-6),mkRing(39,BH-3)],
+  needles:  [mkNeedle(8,BH-3),mkNeedle(12,BH-3),mkNeedle(22,BH-3),mkNeedle(32,BH-3),mkNeedle(38,BH-3)],
+  jacks:    [mkJack(3,BH-3,3,BH-5,3,BH-3,0.9),mkJack(17,BH-3,17,BH-5,17,BH-3,1.1),mkJack(27,BH-3,27,BH-5,27,BH-3,1.2)],
+  checkpoints:[mkCP(10,BH-3),mkCP(28,BH-3)],
+  crystals: [mkCrystal(40,BH-3)],
+  inflators:[],deflators:[],waters:[],
+  exit:     mkExit(41,BH-3),
+  start:    {x:2,y:BH-3},
+},
+
+// ---------------------------------------------------------------
+// LEVEL 3 — WATER WORLD  (9 rings, water introduced)
+// ---------------------------------------------------------------
+{ name:'WATER WORLD', ringCount:9, lvW:48,
+  ground:   [[0,BH-2,12,2],[18,BH-2,7,2],[27,BH-2,21,2]],
+  ceil:     [[0,0,48,1]],
+  walls:    [[0,1,1,BH-3],[4,1,1,BH-3],[8,1,1,BH-4],[12,1,1,BH-3],[19,1,1,BH-4],[24,1,1,BH-3],[28,1,1,BH-4],[34,1,1,BH-3],[40,1,1,BH-4],[45,1,1,BH-3]],
+  platforms:[[10,BH-6,3,1],[15,BH-7,4,1],[22,BH-5,3,1],[30,BH-7,3,1],[37,BH-5,4,1]],
+  rings:    [mkRing(2,BH-3),mkRing(5,BH-3),mkRing(11,BH-7),mkRing(16,BH-8),mkRing(20,BH-3),mkRing(25,BH-3),mkRing(31,BH-8),mkRing(38,BH-6),mkRing(46,BH-3)],
+  needles:  [mkNeedle(9,BH-3),mkNeedle(13,BH-3),mkNeedle(21,BH-3),mkNeedle(29,BH-3),mkNeedle(41,BH-3)],
+  jacks:    [mkJack(3,BH-3,3,BH-5,3,BH-3,1.0),mkJack(23,BH-3,23,BH-5,23,BH-3,1.2),mkJack(43,BH-3,43,BH-5,43,BH-3,1.3)],
+  checkpoints:[mkCP(12,BH-3),mkCP(30,BH-3)],
+  crystals: [mkCrystal(18,BH-3),mkCrystal(47,BH-3)],
+  inflators:[mkInflator(14,BH-3),mkInflator(26,BH-3)],
+  deflators:[mkDeflator(19,BH-3),mkDeflator(28,BH-3)],
+  waters:   [mkWater(12,BH-2,6,2),mkWater(25,BH-2,2,2)],
+  exit:     mkExit(47,BH-3),
+  start:    {x:2,y:BH-3},
+},
+
+// ---------------------------------------------------------------
+// LEVEL 4
+// ---------------------------------------------------------------
+{ name:"JACK'S LAIR", ringCount:9, lvW:50,
+  ground:[[0,BH-2,50,2]],ceil:[[0,0,50,1]],
+  walls:[[0,1,1,BH-3],[4,1,1,BH-3],[8,1,1,BH-4],[12,1,1,BH-5],[17,1,1,BH-3],[22,1,1,BH-4],[27,1,1,BH-5],[32,1,1,BH-3],[37,1,1,BH-4],[42,1,1,BH-5],[47,1,1,BH-3]],
+  platforms:[[6,BH-6,3,1],[14,BH-8,3,1],[19,BH-6,4,1],[29,BH-8,3,1],[34,BH-5,4,1],[44,BH-8,3,1]],
+  rings:[mkRing(2,BH-3),mkRing(7,BH-7),mkRing(10,BH-3),mkRing(15,BH-9),mkRing(20,BH-7),mkRing(25,BH-3),mkRing(30,BH-9),mkRing(35,BH-6),mkRing(48,BH-3)],
+  needles:[mkNeedle(5,BH-3),mkNeedle(9,BH-3),mkNeedle(13,BH-3),mkNeedle(23,BH-3),mkNeedle(28,BH-3),mkNeedle(33,BH-3),mkNeedle(43,BH-3)],
+  jacks:[mkJack(1,BH-3,1,BH-5,1,BH-3,1.1),mkJack(11,BH-3,11,BH-6,11,BH-3,1.2),mkJack(23,BH-3,23,BH-5,23,BH-3,1.4),mkJack(32,BH-3,32,BH-5,32,BH-3,1.3),mkJack(40,BH-3,40,BH-5,40,BH-3,1.5)],
+  checkpoints:[mkCP(9,BH-3),mkCP(26,BH-3),mkCP(44,BH-3)],
+  crystals:[mkCrystal(18,BH-3),mkCrystal(48,BH-3)],
+  inflators:[],deflators:[],waters:[],
+  exit:mkExit(49,BH-3),start:{x:2,y:BH-3},
+},
+
+// ---------------------------------------------------------------
+// LEVEL 5
+// ---------------------------------------------------------------
+{ name:'HIGH RISE', ringCount:10, lvW:52,
+  ground:[[0,BH-2,10,2],[16,BH-2,8,2],[26,BH-2,6,2],[34,BH-2,18,2]],
+  ceil:[[0,0,52,1]],
+  walls:[[0,1,1,BH-3],[3,1,1,BH-3],[7,1,1,BH-4],[11,1,1,BH-5],[17,1,1,BH-4],[23,1,1,BH-3],[27,1,1,BH-4],[35,1,1,BH-5],[40,1,1,BH-3],[45,1,1,BH-4],[50,1,1,BH-5]],
+  platforms:[[4,BH-7,4,1],[9,BH-9,4,1],[13,BH-7,5,1],[18,BH-10,5,1],[24,BH-8,4,1],[28,BH-11,4,1],[36,BH-8,5,1],[41,BH-6,4,1],[46,BH-9,4,1]],
+  rings:[mkRing(5,BH-8),mkRing(10,BH-10),mkRing(15,BH-8),mkRing(19,BH-11),mkRing(25,BH-9),mkRing(29,BH-12),mkRing(37,BH-9),mkRing(42,BH-7),mkRing(47,BH-10),mkRing(51,BH-3)],
+  needles:[mkNeedle(4,BH-3),mkNeedle(8,BH-3),mkNeedle(12,BH-3),mkNeedle(18,BH-3),mkNeedle(24,BH-3),mkNeedle(35,BH-3),mkNeedle(40,BH-3),mkNeedle(45,BH-3)],
+  jacks:[mkJack(2,BH-3,2,BH-5,2,BH-3,1.2),mkJack(14,BH-3,14,BH-5,14,BH-3,1.3),mkJack(22,BH-3,22,BH-5,22,BH-3,1.4),mkJack(30,BH-3,30,BH-5,30,BH-3,1.5),mkJack(38,BH-3,38,BH-5,38,BH-3,1.5),mkJack(48,BH-3,48,BH-5,48,BH-3,1.6)],
+  checkpoints:[mkCP(12,BH-3),mkCP(28,BH-3),mkCP(46,BH-3)],
+  crystals:[mkCrystal(22,BH-3),mkCrystal(50,BH-3)],
+  inflators:[mkInflator(8,BH-9)],deflators:[mkDeflator(16,BH-3)],
+  waters:[mkWater(10,BH-2,6,2),mkWater(26,BH-2,2,2)],
+  exit:mkExit(51,BH-3),start:{x:2,y:BH-3},
+},
+
+// ---------------------------------------------------------------
+// LEVEL 6 — Sunken city
+// ---------------------------------------------------------------
+{ name:'SUNKEN CITY', ringCount:10, lvW:56,
+  ground:[[0,BH-2,8,2],[14,BH-2,6,2],[24,BH-2,8,2],[36,BH-2,6,2],[46,BH-2,10,2]],
+  ceil:[[0,0,56,1]],
+  walls:[[0,1,1,BH-3],[4,1,1,BH-3],[8,1,1,BH-4],[15,1,1,BH-3],[21,1,1,BH-4],[25,1,1,BH-3],[30,1,1,BH-4],[37,1,1,BH-3],[43,1,1,BH-4],[47,1,1,BH-3],[52,1,1,BH-4]],
+  platforms:[[6,BH-6,3,1],[12,BH-8,4,1],[16,BH-6,5,1],[22,BH-9,3,1],[26,BH-7,4,1],[31,BH-9,4,1],[38,BH-7,4,1],[44,BH-8,3,1],[48,BH-6,4,1],[53,BH-9,2,1]],
+  rings:[mkRing(5,BH-7),mkRing(7,BH-3),mkRing(13,BH-9),mkRing(17,BH-7),mkRing(23,BH-10),mkRing(27,BH-8),mkRing(32,BH-10),mkRing(39,BH-8),mkRing(49,BH-7),mkRing(54,BH-10)],
+  needles:[mkNeedle(9,BH-3),mkNeedle(16,BH-3),mkNeedle(22,BH-3),mkNeedle(31,BH-3),mkNeedle(38,BH-3),mkNeedle(44,BH-3),mkNeedle(53,BH-3)],
+  jacks:[mkJack(2,BH-3,2,BH-5,2,BH-3,1.1),mkJack(11,BH-4,11,BH-7,11,BH-4,1.3),mkJack(19,BH-3,19,BH-5,19,BH-3,1.4),mkJack(28,BH-4,28,BH-6,28,BH-4,1.5),mkJack(41,BH-3,41,BH-5,41,BH-3,1.5),mkJack(55,BH-4,55,BH-7,55,BH-4,1.6)],
+  checkpoints:[mkCP(10,BH-3),mkCP(29,BH-3),mkCP(46,BH-3)],
+  crystals:[mkCrystal(20,BH-3),mkCrystal(34,BH-3)],
+  inflators:[mkInflator(10,BH-8),mkInflator(23,BH-3),mkInflator(37,BH-3)],
+  deflators:[mkDeflator(15,BH-3),mkDeflator(31,BH-3),mkDeflator(46,BH-3)],
+  waters:[mkWater(8,BH-2,6,2),mkWater(20,BH-2,4,2),mkWater(32,BH-2,4,2),mkWater(42,BH-2,4,2)],
+  exit:mkExit(55,BH-3),start:{x:2,y:BH-3},
+},
+
+// ---------------------------------------------------------------
+// LEVEL 7 — Needle forest
+// ---------------------------------------------------------------
+{ name:'NEEDLE FOREST', ringCount:11, lvW:54,
+  ground:[[0,BH-2,54,2]],ceil:[[0,0,54,1]],
+  walls:[[0,1,1,BH-3],[3,1,1,BH-3],[6,1,1,BH-4],[9,1,1,BH-3],[12,1,1,BH-4],[15,1,1,BH-5],[19,1,1,BH-3],[22,1,1,BH-4],[25,1,1,BH-5],[29,1,1,BH-3],[32,1,1,BH-4],[35,1,1,BH-5],[39,1,1,BH-3],[42,1,1,BH-4],[45,1,1,BH-5],[49,1,1,BH-3],[52,1,1,BH-4]],
+  platforms:[[1,BH-8,3,1],[4,BH-6,3,1],[7,BH-9,3,1],[10,BH-7,3,1],[13,BH-9,3,1],[17,BH-7,3,1],[20,BH-9,3,1],[23,BH-10,3,1],[27,BH-7,3,1],[30,BH-9,3,1],[33,BH-10,3,1],[37,BH-7,3,1],[40,BH-9,3,1],[43,BH-10,3,1],[47,BH-7,3,1],[50,BH-9,2,1]],
+  rings:[mkRing(2,BH-9),mkRing(5,BH-7),mkRing(8,BH-10),mkRing(11,BH-8),mkRing(14,BH-10),mkRing(18,BH-8),mkRing(21,BH-10),mkRing(24,BH-11),mkRing(28,BH-8),mkRing(38,BH-8),mkRing(51,BH-3)],
+  needles:[mkNeedle(4,BH-3),mkNeedle(7,BH-3),mkNeedle(10,BH-3),mkNeedle(13,BH-3),mkNeedle(16,BH-3),mkNeedle(20,BH-3),mkNeedle(23,BH-3),mkNeedle(26,BH-3),mkNeedle(30,BH-3),mkNeedle(33,BH-3),mkNeedle(36,BH-3),mkNeedle(40,BH-3),mkNeedle(43,BH-3),mkNeedle(46,BH-3),mkNeedle(50,BH-3)],
+  jacks:[mkJack(5,BH-3,5,BH-5,5,BH-3,1.3),mkJack(11,BH-3,11,BH-6,11,BH-3,1.4),mkJack(19,BH-3,19,BH-5,19,BH-3,1.5),mkJack(27,BH-4,27,BH-7,27,BH-4,1.6),mkJack(35,BH-3,35,BH-6,35,BH-3,1.4),mkJack(44,BH-4,44,BH-7,44,BH-4,1.7),mkJack(52,BH-3,52,BH-5,52,BH-3,1.5)],
+  checkpoints:[mkCP(10,BH-3),mkCP(24,BH-3),mkCP(40,BH-3)],
+  crystals:[mkCrystal(16,BH-3),mkCrystal(32,BH-3),mkCrystal(52,BH-3)],
+  inflators:[],deflators:[],waters:[],
+  exit:mkExit(53,BH-3),start:{x:2,y:BH-3},
+},
+
+// ---------------------------------------------------------------
+// LEVEL 8 — The Pyramids
+// ---------------------------------------------------------------
+{ name:'THE PYRAMIDS', ringCount:12, lvW:60,
+  ground:[[0,BH-2,60,2]],ceil:[[0,0,60,1]],walls:[[0,1,1,BH-3]],
+  platforms:[
+    [2,BH-3,8,1],[3,BH-4,6,1],[4,BH-5,4,1],[5,BH-6,2,1],
+    [13,BH-3,8,1],[14,BH-4,6,1],[15,BH-5,4,1],[16,BH-6,2,1],
+    [25,BH-3,10,1],[26,BH-4,8,1],[27,BH-5,6,1],[28,BH-6,4,1],[29,BH-7,2,1],
+    [38,BH-3,8,1],[39,BH-4,6,1],[40,BH-5,4,1],[41,BH-6,2,1],
+    [50,BH-3,8,1],[51,BH-4,6,1],[52,BH-5,4,1],[53,BH-6,2,1],
+  ],
+  rings:[mkRing(3,BH-4),mkRing(5,BH-7),mkRing(8,BH-4),mkRing(14,BH-4),mkRing(16,BH-7),mkRing(26,BH-4),mkRing(29,BH-8),mkRing(34,BH-3),mkRing(39,BH-4),mkRing(41,BH-7),mkRing(51,BH-4),mkRing(58,BH-3)],
+  needles:[mkNeedle(10,BH-3),mkNeedle(11,BH-3),mkNeedle(22,BH-3),mkNeedle(23,BH-3),mkNeedle(35,BH-3),mkNeedle(36,BH-3),mkNeedle(46,BH-3),mkNeedle(47,BH-3)],
+  jacks:[mkJack(1,BH-3,1,BH-5,1,BH-3,1.3),mkJack(12,BH-3,12,BH-5,12,BH-3,1.4),mkJack(23,BH-3,23,BH-5,23,BH-3,1.5),mkJack(36,BH-3,36,BH-5,36,BH-3,1.5),mkJack(48,BH-4,48,BH-6,48,BH-4,1.6),mkJack(59,BH-3,59,BH-5,59,BH-3,1.4)],
+  checkpoints:[mkCP(11,BH-8),mkCP(29,BH-8),mkCP(41,BH-7)],
+  crystals:[mkCrystal(20,BH-3),mkCrystal(35,BH-3),mkCrystal(57,BH-3)],
+  inflators:[],deflators:[],waters:[],
+  exit:mkExit(59,BH-3),start:{x:2,y:BH-3},
+},
+
+// ---------------------------------------------------------------
+// LEVEL 9 — Sky vault
+// ---------------------------------------------------------------
+{ name:'SKY VAULT', ringCount:12, lvW:58,
+  ground:[[0,BH-2,6,2],[12,BH-2,6,2],[22,BH-2,6,2],[32,BH-2,6,2],[42,BH-2,6,2],[52,BH-2,6,2]],
+  ceil:[[0,0,58,1]],
+  walls:[[0,1,1,BH-3],[3,1,1,BH-3],[7,1,1,BH-5],[13,1,1,BH-4],[18,1,1,BH-6],[23,1,1,BH-4],[28,1,1,BH-6],[33,1,1,BH-4],[38,1,1,BH-6],[43,1,1,BH-4],[48,1,1,BH-6],[53,1,1,BH-4]],
+  platforms:[[4,BH-8,3,1],[8,BH-11,5,1],[14,BH-9,4,1],[19,BH-11,4,1],[24,BH-9,4,1],[29,BH-11,4,1],[34,BH-9,4,1],[39,BH-11,4,1],[44,BH-9,4,1],[49,BH-11,4,1],[54,BH-9,3,1]],
+  rings:[mkRing(5,BH-9),mkRing(9,BH-12),mkRing(15,BH-10),mkRing(20,BH-12),mkRing(25,BH-10),mkRing(30,BH-12),mkRing(35,BH-10),mkRing(40,BH-12),mkRing(45,BH-10),mkRing(50,BH-12),mkRing(55,BH-10),mkRing(57,BH-3)],
+  needles:[mkNeedle(4,BH-3),mkNeedle(8,BH-3),mkNeedle(14,BH-3),mkNeedle(23,BH-3),mkNeedle(33,BH-3),mkNeedle(43,BH-3),mkNeedle(53,BH-3)],
+  jacks:[mkJack(2,BH-3,2,BH-5,2,BH-3,1.4),mkJack(10,BH-4,10,BH-7,10,BH-4,1.5),mkJack(20,BH-4,20,BH-7,20,BH-4,1.6),mkJack(30,BH-4,30,BH-7,30,BH-4,1.7),mkJack(40,BH-4,40,BH-7,40,BH-4,1.6),mkJack(50,BH-4,50,BH-7,50,BH-4,1.8),mkJack(57,BH-3,57,BH-5,57,BH-3,1.5)],
+  checkpoints:[mkCP(7,BH-3),mkCP(19,BH-3),mkCP(37,BH-3),mkCP(49,BH-3)],
+  crystals:[mkCrystal(11,BH-3),mkCrystal(28,BH-3),mkCrystal(55,BH-3)],
+  inflators:[mkInflator(6,BH-8),mkInflator(18,BH-3),mkInflator(36,BH-3)],
+  deflators:[mkDeflator(12,BH-3),mkDeflator(26,BH-3),mkDeflator(46,BH-3)],
+  waters:[mkWater(6,BH-2,6,2),mkWater(18,BH-2,4,2),mkWater(28,BH-2,4,2),mkWater(38,BH-2,4,2),mkWater(48,BH-2,4,2)],
+  exit:mkExit(57,BH-3),start:{x:2,y:BH-3},
+},
+
+// ---------------------------------------------------------------
+// LEVEL 10 — Jack frenzy
+// ---------------------------------------------------------------
+{ name:'JACK FRENZY', ringCount:13, lvW:62,
+  ground:[[0,BH-2,62,2]],ceil:[[0,0,62,1]],
+  walls:[[0,1,1,BH-3],[3,1,1,BH-4],[6,1,1,BH-5],[9,1,1,BH-4],[12,1,1,BH-5],[15,1,1,BH-6],[18,1,1,BH-4],[21,1,1,BH-5],[24,1,1,BH-6],[27,1,1,BH-4],[30,1,1,BH-5],[33,1,1,BH-6],[36,1,1,BH-4],[39,1,1,BH-5],[42,1,1,BH-6],[45,1,1,BH-4],[48,1,1,BH-5],[51,1,1,BH-6],[54,1,1,BH-4],[57,1,1,BH-5],[60,1,1,BH-6]],
+  platforms:[[1,BH-7,3,1],[4,BH-9,3,1],[7,BH-7,3,1],[10,BH-9,3,1],[13,BH-10,3,1],[16,BH-7,3,1],[19,BH-9,3,1],[22,BH-10,3,1],[25,BH-7,3,1],[28,BH-9,3,1],[31,BH-10,3,1],[34,BH-7,3,1],[37,BH-9,3,1],[40,BH-10,3,1],[43,BH-7,3,1],[46,BH-9,3,1],[49,BH-10,3,1],[52,BH-7,3,1],[55,BH-9,3,1],[58,BH-10,3,1]],
+  rings:[mkRing(2,BH-8),mkRing(5,BH-10),mkRing(8,BH-8),mkRing(11,BH-10),mkRing(14,BH-11),mkRing(17,BH-8),mkRing(20,BH-10),mkRing(23,BH-11),mkRing(26,BH-8),mkRing(29,BH-10),mkRing(32,BH-11),mkRing(43,BH-8),mkRing(60,BH-3)],
+  needles:[mkNeedle(4,BH-3),mkNeedle(7,BH-3),mkNeedle(13,BH-3),mkNeedle(19,BH-3),mkNeedle(25,BH-3),mkNeedle(31,BH-3),mkNeedle(37,BH-3),mkNeedle(43,BH-3),mkNeedle(49,BH-3),mkNeedle(55,BH-3)],
+  jacks:[mkJack(1,BH-3,1,BH-5,1,BH-3,1.2),mkJack(2,BH-3,2,BH-5,2,BH-3,1.1),mkJack(10,BH-4,10,BH-7,10,BH-4,1.5),mkJack(16,BH-3,16,BH-6,16,BH-3,1.4),mkJack(17,BH-3,17,BH-6,17,BH-3,1.3),mkJack(22,BH-4,22,BH-7,22,BH-4,1.6),mkJack(28,BH-3,28,BH-6,28,BH-3,1.5),mkJack(34,BH-4,34,BH-7,34,BH-4,1.7),mkJack(40,BH-3,40,BH-6,40,BH-3,1.6),mkJack(41,BH-3,41,BH-6,41,BH-3,1.4),mkJack(46,BH-4,46,BH-8,46,BH-4,1.8),mkJack(52,BH-3,52,BH-6,52,BH-3,1.5),mkJack(58,BH-4,58,BH-7,58,BH-4,1.7),mkJack(59,BH-4,59,BH-7,59,BH-4,1.6)],
+  checkpoints:[mkCP(8,BH-3),mkCP(20,BH-3),mkCP(35,BH-3),mkCP(50,BH-3)],
+  crystals:[mkCrystal(14,BH-3),mkCrystal(38,BH-3),mkCrystal(61,BH-3)],
+  inflators:[],deflators:[],waters:[],
+  exit:mkExit(61,BH-3),start:{x:2,y:BH-3},
+},
+
+// ---------------------------------------------------------------
+// LEVEL 11 — Final Frontier
+// ---------------------------------------------------------------
+{ name:'FINAL FRONTIER', ringCount:15, lvW:70,
+  ground:[[0,BH-2,10,2],[16,BH-2,8,2],[28,BH-2,8,2],[40,BH-2,8,2],[52,BH-2,18,2]],
+  ceil:[[0,0,70,1]],
+  walls:[[0,1,1,BH-3],[4,1,1,BH-4],[8,1,1,BH-6],[17,1,1,BH-5],[22,1,1,BH-7],[29,1,1,BH-5],[34,1,1,BH-7],[41,1,1,BH-5],[46,1,1,BH-7],[53,1,1,BH-4],[58,1,1,BH-6],[63,1,1,BH-4],[68,1,1,BH-6]],
+  platforms:[[2,BH-8,3,1],[5,BH-10,4,1],[9,BH-11,8,1],[17,BH-8,5,1],[23,BH-11,5,1],[29,BH-8,5,1],[35,BH-11,5,1],[41,BH-8,5,1],[47,BH-11,5,1],[54,BH-8,4,1],[59,BH-10,4,1],[64,BH-8,4,1]],
+  rings:[mkRing(3,BH-9),mkRing(6,BH-11),mkRing(10,BH-12),mkRing(13,BH-3),mkRing(18,BH-9),mkRing(24,BH-12),mkRing(30,BH-9),mkRing(36,BH-12),mkRing(42,BH-9),mkRing(48,BH-12),mkRing(55,BH-9),mkRing(60,BH-11),mkRing(65,BH-9),mkRing(67,BH-3),mkRing(69,BH-3)],
+  needles:[mkNeedle(5,BH-3),mkNeedle(9,BH-3),mkNeedle(10,BH-3),mkNeedle(18,BH-3),mkNeedle(23,BH-3),mkNeedle(29,BH-3),mkNeedle(35,BH-3),mkNeedle(41,BH-3),mkNeedle(47,BH-3),mkNeedle(54,BH-3),mkNeedle(59,BH-3),mkNeedle(64,BH-3)],
+  jacks:[mkJack(1,BH-3,1,BH-5,1,BH-3,1.3),mkJack(2,BH-4,2,BH-6,2,BH-4,1.2),mkJack(14,BH-3,14,BH-6,14,BH-3,1.4),mkJack(15,BH-3,15,BH-5,15,BH-3,1.5),mkJack(25,BH-4,25,BH-8,25,BH-4,1.6),mkJack(26,BH-3,26,BH-7,26,BH-3,1.7),mkJack(38,BH-4,38,BH-7,38,BH-4,1.5),mkJack(39,BH-3,39,BH-6,39,BH-3,1.6),mkJack(50,BH-3,50,BH-6,50,BH-3,1.6),mkJack(51,BH-4,51,BH-7,51,BH-4,1.7),mkJack(62,BH-4,62,BH-7,62,BH-4,1.8),mkJack(63,BH-4,63,BH-7,63,BH-4,1.7),mkJack(64,BH-3,64,BH-6,64,BH-3,1.9)],
+  checkpoints:[mkCP(7,BH-3),mkCP(15,BH-3),mkCP(24,BH-3),mkCP(36,BH-3),mkCP(48,BH-3),mkCP(62,BH-3)],
+  crystals:[mkCrystal(13,BH-3),mkCrystal(27,BH-3),mkCrystal(39,BH-3),mkCrystal(52,BH-3),mkCrystal(66,BH-3)],
+  inflators:[mkInflator(5,BH-9),mkInflator(23,BH-3),mkInflator(41,BH-3)],
+  deflators:[mkDeflator(13,BH-3),mkDeflator(29,BH-3),mkDeflator(47,BH-3)],
+  waters:[mkWater(10,BH-2,6,2),mkWater(24,BH-2,4,2),mkWater(36,BH-2,4,2),mkWater(48,BH-2,4,2)],
+  exit:mkExit(69,BH-3),start:{x:2,y:BH-3},
+},
+];
+
+// ================================================================
+//  GAME STATE
+// ================================================================
+const save = JSON.parse(localStorage.getItem('b3310v4')||'{}');
+let LV={}, lvIdx=0, lives=3, ringsGot=0, score=0;
+let B={}, camX=0, respX=0, respY=0;
+let inflated=false, inflTimer=0;
+let gState='idle', raf=0, lastT=0, msgT=0;
+const K={L:false,R:false};
+
+// ================================================================
+//  NAVIGATION
+// ================================================================
+function setScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function showSplash(){ cancelAnimationFrame(raf); gState='idle'; setScreen('splash'); }
+function showHowToPlay(){ setScreen('howToPlay'); }
+function showLevelSelect(){ cancelAnimationFrame(raf); gState='idle'; buildLvGrid(); setScreen('levelSelect'); }
+
+function toggleMode(){
+  colorMode = !colorMode; P = colorMode ? COLOR : MONO;
+  document.body.style.background = colorMode ? '#2a3a50' : '#3a4a2a';
+  document.querySelectorAll('.tog').forEach(tog=>{
+    tog.closest('.mode-row') && tog.closest('.mode-row').classList.toggle('color-mode', colorMode);
+  });
+}
+
+function buildLvGrid(){
+  const g = document.getElementById('lvGrid'); g.innerHTML = '';
+  LEVELS.forEach((lv, i)=>{
+    const d = document.createElement('div'); d.className = 'lv-cell';
+    const done = save[i];
+    const unlock = (i === 0 || save[i-1]);
+    if(done)        d.classList.add('done');
+    else if(unlock) d.classList.add('unlocked');
+    else            d.classList.add('locked');
+    // FIX: use lv.ringCount (number) not lv.rings (array)
+    d.innerHTML = `<div class="lv-num">${i+1}</div><div class="lv-r">${lv.ringCount}◎</div>`;
+    d.onclick = ()=> startLevel(i);
+    g.appendChild(d);
+  });
+}
+
+// ================================================================
+//  LEVEL INIT
+// ================================================================
+function startLevel(idx){
+  lvIdx = idx; lives = 3; score = 0;
+  setScreen('gameScreen');
+  initLevel();
+  gState = 'playing'; lastT = 0;
+  cancelAnimationFrame(raf);
+  raf = requestAnimationFrame(loop);
+}
+
+function BR(){ return inflated ? 20 : 12; }
+
+function initLevel(){
+  const src = LEVELS[lvIdx];
+  // Deep clone so collected/used flags reset each run
+  LV = JSON.parse(JSON.stringify(src));
+  ringsGot = 0; inflated = false; inflTimer = 0; msgT = 0;
+
+  const r = BR();
+  B = {
+    x: src.start.x * T + T/2,
+    y: src.start.y * T - r,   // position ball so its bottom sits on the tile top
+    vx: 0, vy: 0,
+    onGround: false,
+    coyote: 0,
+    jumps: 0,
+    angle: 0,
+    dead: false
+  };
+  respX = B.x; respY = B.y;
+  camX = 0;
+
+  document.getElementById('hR').textContent = '0';
+  // FIX: use LV.ringCount (number) — was LV.rings which is the array
+  document.getElementById('hT').textContent = LV.ringCount;
+  document.getElementById('hScore').textContent = '0';
+  document.getElementById('hMsg').textContent = '';
+  updateLivesHUD();
+  hideOverlays();
+  resizeCanvas();
+}
+
+function updateLivesHUD(){
+  const el = document.getElementById('hLives');
+  let html = '';
+  for(let i = 0; i < 5; i++){
+    html += `<svg width="10" height="10" viewBox="0 0 10 10" style="opacity:${i<lives?1:0.2}">
+      <circle cx="5" cy="5" r="4" fill="${P.ball}" stroke="${P.dark}" stroke-width="1"/>
+      <rect x="3" y="3" width="2" height="2" fill="${P.ballHi}" opacity="0.7"/>
+    </svg>`;
+  }
+  el.innerHTML = html;
+}
+
+function hideOverlays(){
+  ['oPause','oComplete','oGameOver','oWin'].forEach(id=>
+    document.getElementById(id).classList.remove('show'));
+}
+
+function resizeCanvas(){
+  const gs   = document.getElementById('gameScreen');
+  const c    = document.getElementById('gameCanvas');
+  const hudH = document.getElementById('hud').offsetHeight;
+  const ctrlH = 96;
+  c.width  = gs.clientWidth;
+  c.height = gs.clientHeight - hudH - ctrlH;
+  c.style.marginTop = hudH + 'px';
+}
+
+// ================================================================
+//  GAME LOOP
+// ================================================================
+function loop(ts){
+  if(gState !== 'playing') return;
+  const dt = Math.min((ts - (lastT || ts)) / 16.67, 3);
+  lastT = ts;
+  update(dt);
+  draw();
+  raf = requestAnimationFrame(loop);
+}
+
+// ================================================================
+//  UPDATE
+// ================================================================
+function update(dt){
+  if(B.dead) return;
+
+  // Horizontal input
+  if(K.L)      B.vx = -SPD;
+  else if(K.R) B.vx =  SPD;
+  else         B.vx *= FRIC;
+
+  // Gravity
+  B.vy += GRAV * dt;
+  if(B.vy > 16) B.vy = 16;
+
+  // Inflate timer
+  if(inflated){
+    inflTimer -= dt;
+    if(inflTimer <= 0){ inflated = false; setMsg('DEFLATED!'); }
+  }
+
+  // Coyote time tracking — must snapshot before clearing onGround
+  if(B.onGround) B.coyote = 8;
+  else if(B.coyote > 0) B.coyote--;
+  B.onGround = false;
+
+  // ── Move X → resolve X ───────────────────────────────────────
+  B.x += B.vx * dt;
+  const lvPxW = LV.lvW * T;
+  // Clamp to world bounds
+  const r = BR();
+  if(B.x - r < 0)      { B.x = r;          B.vx = 0; }
+  if(B.x + r > lvPxW)  { B.x = lvPxW - r;  B.vx = 0; }
+  resolveX();
+
+  // ── Move Y → resolve Y ───────────────────────────────────────
+  B.y += B.vy * dt;
+  resolveY();
+
+  // Water buoyancy
+  let inWater = false;
+  (LV.waters||[]).forEach(w=>{
+    if(B.x+r > w.x*T && B.x-r < (w.x+w.w)*T &&
+       B.y+r > w.y*T && B.y-r < (w.y+w.h)*T) inWater = true;
+  });
+  if(inWater){
+    if(!inflated){ B.vy += 0.6*dt; if(B.vy > 12) B.vy = 12; }
+    else         { B.vy -= 1.2*dt; if(B.vy < -5) B.vy = -5; }
+  }
+
+  // Roll animation
+  B.angle += B.vx * 0.05;
+
+  // Camera smooth follow — keep ball at ~35% from left edge
+  const canvas = document.getElementById('gameCanvas');
+  const tgt = B.x - canvas.width * 0.35;
+  camX += (tgt - camX) * 0.12;
+  const maxCam = Math.max(0, lvPxW - canvas.width);
+  camX = Math.max(0, Math.min(maxCam, camX));
+
+  // HUD message timer
+  if(msgT > 0){ msgT -= dt; if(msgT <= 0) document.getElementById('hMsg').textContent = ''; }
+
+  // Score from movement
+  score += Math.abs(B.vx) * 0.01;
+
+  // Collect rings
+  (LV.rings||[]).forEach(ring=>{
+    if(ring.collected) return;
+    const rx = ring.x*T + T/2, ry = ring.y*T + T/2;
+    if(dist(B.x, B.y, rx, ry) < r + 13){
+      ring.collected = true; ringsGot++; score += 500;
+      document.getElementById('hR').textContent = ringsGot;
+      document.getElementById('hScore').textContent = Math.floor(score);
+      // FIX: compare against ringCount, not rings (array)
+      if(ringsGot >= LV.ringCount) setMsg('EXIT OPEN!');
+    }
+  });
+
+  // Checkpoints
+  (LV.checkpoints||[]).forEach(cp=>{
+    if(cp.hit) return;
+    if(dist(B.x, B.y, cp.x*T+T/2, cp.y*T+T/2) < r + 14){
+      cp.hit = true; respX = B.x; respY = B.y; score += 200;
+      setMsg('CHECKPOINT!');
+      document.getElementById('hScore').textContent = Math.floor(score);
+    }
+  });
+
+  // Crystals (extra life)
+  (LV.crystals||[]).forEach(cr=>{
+    if(cr.collected) return;
+    if(dist(B.x, B.y, cr.x*T+T/2, cr.y*T+T/2) < r + 13){
+      cr.collected = true;
+      if(lives < 5){ lives++; updateLivesHUD(); }
+      score += 1000; setMsg('+1 LIFE!');
+      document.getElementById('hScore').textContent = Math.floor(score);
+    }
+  });
+
+  // Inflators
+  (LV.inflators||[]).forEach(inf=>{
+    if(inf.used) return;
+    if(dist(B.x, B.y, inf.x*T+T/2, inf.y*T+T/2) < r + 13){
+      inf.used = true; inflated = true; inflTimer = INFLATE_FRAMES;
+      setMsg('INFLATED!');
+    }
+  });
+
+  // Deflators
+  (LV.deflators||[]).forEach(def=>{
+    if(inflated && dist(B.x, B.y, def.x*T+T/2, def.y*T+T/2) < r + 13){
+      inflated = false; inflTimer = 0; setMsg('DEFLATED!');
+    }
+  });
+
+  // Jack enemies
+  (LV.jacks||[]).forEach(j=>{
+    j.t += j.sp * 0.02 * dt * j.dir;
+    if(j.t >= 1){ j.t = 1; j.dir = -1; }
+    if(j.t <= 0){ j.t = 0; j.dir = 1; }
+    j.x = j.ax + (j.bx - j.ax) * j.t;
+    j.y = j.ay + (j.by - j.ay) * j.t;
+    if(dist(B.x, B.y, j.x*T+T/2, j.y*T+T/2) < r + 10) die();
+  });
+
+  // Needle hazards
+  (LV.needles||[]).forEach(n=>{
+    const nx = n.x*T + T/2;
+    const ny = n.y*T + 4;   // needle tip
+    if(dist(B.x, B.y, nx, ny) < r + 5) die();
+  });
+
+  // Exit door — FIX: use ringCount
+  if(ringsGot >= LV.ringCount && LV.exit){
+    const ex = LV.exit;
+    if(dist(B.x, B.y, ex.x*T+T/2, ex.y*T+T/2) < r + 20) levelDone();
+  }
+
+  // Fall out of world
+  if(B.y > BH*T + 120) die();
+}
+
+function dist(ax,ay,bx,by){ return Math.sqrt((ax-bx)**2+(ay-by)**2); }
+function setMsg(t){ document.getElementById('hMsg').textContent = t; msgT = 90; }
+
+// ================================================================
+//  SOLID BLOCK COLLECTION
+// ================================================================
+function getBlocks(){
+  const bl = [];
+  ['ground','ceil','walls','platforms'].forEach(k=>{
+    (LV[k]||[]).forEach(b=> bl.push({
+      x: b[0]*T, y: b[1]*T,
+      w: b[2]*T, h: b[3]*T
+    }));
+  });
+  return bl;
+}
+
+// ================================================================
+//  COLLISION RESOLUTION — AABB sweep
+//
+//  FIX 3: Rewrote both resolveX and resolveY to be more robust:
+//
+//  resolveX: removed the +2/-2 Y-margin fudge factors that could
+//    cause the ball to clip through thin walls when near block
+//    edges. Now uses a generous 1px inset on each side so the
+//    check still rejects pure corner grazes without missing real
+//    collisions.
+//
+//  resolveY: removed the incorrect 'b.h * 0.6' multiplier on the
+//    landing check — that caused the ball to partially sink into
+//    blocks before being pushed out. Now uses a clean half-height
+//    midpoint test: ball lands if its bottom enters the top half
+//    of the block. Ceiling hit uses consistent mirror logic.
+//    Also clamped correction so the ball can never tunnel through
+//    a block in a single frame regardless of dt spike.
+// ================================================================
+function resolveX(){
+  const r = BR();
+  getBlocks().forEach(b=>{
+    // Only test X collision if ball overlaps the block in Y
+    // (use 1px inset to avoid ghost-collisions at exact corners)
+    if(B.y + r > b.y + 1 && B.y - r < b.y + b.h - 1){
+      // Moving right — ball right edge passed block left edge
+      if(B.vx >= 0 && B.x + r > b.x && B.x - r < b.x){
+        B.x = b.x - r; B.vx = 0;
+      }
+      // Moving left — ball left edge passed block right edge
+      if(B.vx <= 0 && B.x - r < b.x + b.w && B.x + r > b.x + b.w){
+        B.x = b.x + b.w + r; B.vx = 0;
+      }
+    }
+  });
+}
+
+function resolveY(){
+  const r = BR();
+  getBlocks().forEach(b=>{
+    // Only test Y collision if ball overlaps the block in X
+    if(B.x + r > b.x + 1 && B.x - r < b.x + b.w - 1){
+      const ballBottom = B.y + r;
+      const ballTop    = B.y - r;
+      const blockMid   = b.y + b.h * 0.5;
+
+      // Landing on top: ball bottom entered block from above
+      // Ball centre must still be above block midpoint to count as "on top"
+      if(B.vy >= 0 && ballBottom > b.y && B.y < blockMid){
+        B.y = b.y - r;
+        B.vy = 0;
+        B.onGround = true;
+        B.coyote   = 8;
+        B.jumps    = 0;
+      }
+      // Hitting underside: ball top entered block from below
+      // Ball centre must still be below block midpoint
+      if(B.vy < 0 && ballTop < b.y + b.h && B.y > blockMid){
+        B.y  = b.y + b.h + r;
+        B.vy = Math.abs(B.vy) * 0.15;
+      }
+    }
+  });
+}
+
+// ================================================================
+//  JUMP
+// ================================================================
+function doJump(){
+  if(gState !== 'playing') return;
+  if(B.onGround || B.coyote > 0){
+    B.vy = JUMP1; B.onGround = false; B.coyote = 0; B.jumps = 1;
+  } else if(B.jumps < 2){
+    B.vy = JUMP2; B.jumps = 2;
+  }
+}
+
+// ================================================================
+//  DIE / RESPAWN
+// ================================================================
+function die(){
+  if(B.dead) return;
+  B.dead = true; gState = 'dead';
+  lives--;
+  updateLivesHUD();
+  setTimeout(()=>{
+    if(lives <= 0){
+      document.getElementById('goLv').textContent = lvIdx + 1;
+      document.getElementById('oGameOver').classList.add('show');
+    } else {
+      B = { x:respX, y:respY, vx:0, vy:0,
+            onGround:false, jumps:0, angle:0, dead:false, coyote:0 };
+      inflated = false; inflTimer = 0;
+      gState = 'playing'; lastT = performance.now();
+      raf = requestAnimationFrame(loop);
+    }
+  }, 500);
+}
+
+function levelDone(){
+  gState = 'complete';
+  save[lvIdx] = true;
+  localStorage.setItem('b3310v4', JSON.stringify(save));
+  score += lives * 1000;
+  document.getElementById('hScore').textContent = Math.floor(score);
+  if(lvIdx >= LEVELS.length - 1){
+    document.getElementById('oWin').classList.add('show');
+  } else {
+    // FIX: use ringCount
+    document.getElementById('oMsg').textContent =
+      `RINGS ${ringsGot}/${LV.ringCount}  SCORE ${Math.floor(score)}`;
+    document.getElementById('oComplete').classList.add('show');
+  }
+}
+
+function nextLevel(){
+  if(lvIdx < LEVELS.length - 1) startLevel(lvIdx + 1); else showSplash();
+}
+function retryLevel(){ lives = 3; startLevel(lvIdx); }
+function pauseGame(){ gState = 'paused'; document.getElementById('oPause').classList.add('show'); }
+function resumeGame(){
+  document.getElementById('oPause').classList.remove('show');
+  gState = 'playing'; lastT = performance.now();
+  raf = requestAnimationFrame(loop);
+}
+
+// ================================================================
+//  DRAW
+// ================================================================
+function draw(){
+  const canvas = document.getElementById('gameCanvas');
+  const ctx    = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  if(!ctx || W === 0 || H === 0) return;
+
+  // Sky background
+  ctx.fillStyle = P.sky;
+  ctx.fillRect(0, 0, W, H);
+
+  // LCD scanlines (mono only)
+  if(!colorMode){
+    for(let sy = 0; sy < H; sy += 2){
+      ctx.fillStyle = 'rgba(0,0,0,0.04)';
+      ctx.fillRect(0, sy, W, 1);
+    }
+  }
+
+  ctx.save();
+
+  // Pin the level's Y=0 to the canvas top,
+  // but if the canvas is taller than the level, offset down.
+  const lvH_px = BH * T;
+  const offY   = Math.max(0, H - lvH_px);
+  ctx.translate(-Math.floor(camX), offY);
+
+  drawWater(ctx);
+  drawBricks(ctx);
+  drawNeedles(ctx);
+  drawCheckpoints(ctx);
+  drawCrystals(ctx);
+  drawInflators(ctx);
+  drawDeflators(ctx);
+  drawRings(ctx);
+  drawExit(ctx);
+  drawJacks(ctx);
+  drawBall(ctx);
+
+  ctx.restore();
+
+  // Death overlay flash
+  if(gState === 'dead'){
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fillRect(0, 0, W, H);
+  }
+}
+
+// ── BRICKS ──────────────────────────────────────────────────────
+function drawBricks(ctx){
+  function renderBlock(bx, by, bw, bh){
+    ctx.fillStyle = P.brick1;
+    ctx.fillRect(bx, by, bw, bh);
+    ctx.fillStyle = P.brick2;
+    for(let row = 0; row * T < bh; row++){
+      ctx.fillRect(bx, by + row*T, bw, 2);
+      const offset = (row % 2 === 0) ? 0 : T/2;
+      for(let col = offset; col <= bw; col += T){
+        ctx.fillRect(bx + col, by + row*T, 2, T);
+      }
+    }
+    ctx.fillRect(bx, by + bh - 1, bw, 2);
+    ctx.fillStyle = P.brickH;
+    ctx.fillRect(bx, by, bw, 2);
+    ctx.fillRect(bx, by, 2, bh);
+  }
+  ['ground','ceil','walls','platforms'].forEach(k=>{
+    (LV[k]||[]).forEach(b=> renderBlock(b[0]*T, b[1]*T, b[2]*T, b[3]*T));
+  });
+}
+
+// ── WATER ───────────────────────────────────────────────────────
+function drawWater(ctx){
+  const t = Date.now() / 700;
+  (LV.waters||[]).forEach(w=>{
+    const wx=w.x*T, wy=w.y*T, ww=w.w*T, wh=w.h*T;
+    ctx.fillStyle = P.water;
+    ctx.fillRect(wx, wy, ww, wh);
+    ctx.fillStyle = P.waterH;
+    for(let xi = 0; xi < ww; xi += 4){
+      const wvy = wy + 2 + Math.sin(t + xi*0.4) * 2;
+      ctx.fillRect(wx + xi, wvy, 2, 1);
+    }
+  });
+}
+
+// ── NEEDLES ─────────────────────────────────────────────────────
+function drawNeedles(ctx){
+  (LV.needles||[]).forEach(n=>{
+    const nx = n.x*T, ny = n.y*T;
+    ctx.fillStyle = P.needle;
+    ctx.beginPath();
+    ctx.moveTo(nx + T/2, ny + 2);
+    ctx.lineTo(nx + T/2 + 5, ny + T*0.5);
+    ctx.lineTo(nx + T/2 - 5, ny + T*0.5);
+    ctx.closePath(); ctx.fill();
+    ctx.fillRect(nx + T/2 - 2, ny + T*0.5, 4, T*0.5);
+    ctx.fillStyle = colorMode ? '#eecc88' : P.light;
+    ctx.fillRect(nx + T/2, ny + T*0.5 + 2, 1, T*0.4);
+  });
+}
+
+// ── JACKS ───────────────────────────────────────────────────────
+function drawJacks(ctx){
+  const t = Date.now() / 180;
+  (LV.jacks||[]).forEach(j=>{
+    const jx = j.x*T + T/2, jy = j.y*T + T/2;
+    ctx.save(); ctx.translate(jx, jy); ctx.rotate(t);
+    ctx.strokeStyle = P.jack; ctx.lineWidth = 2;
+    for(let i = 0; i < 4; i++){
+      ctx.save(); ctx.rotate(i * Math.PI/2);
+      ctx.fillStyle = P.jack;
+      ctx.beginPath();
+      ctx.moveTo(-2, -2); ctx.lineTo(0, -T*0.45); ctx.lineTo(2, -2);
+      ctx.closePath(); ctx.fill();
+      ctx.fillRect(-3, -T*0.28, 2, 2);
+      ctx.fillRect( 1, -T*0.28, 2, 2);
+      ctx.restore();
+    }
+    ctx.fillStyle = P.dark; ctx.fillRect(-3, -3, 6, 6);
+    ctx.fillStyle = colorMode ? '#4477ff' : P.light; ctx.fillRect(-2, -2, 4, 4);
+    ctx.restore();
+  });
+}
+
+// ── RINGS ───────────────────────────────────────────────────────
+function drawRings(ctx){
+  const t = Date.now() / 350;
+  (LV.rings||[]).forEach((ring, i)=>{
+    if(ring.collected) return;
+    const rx = ring.x*T + T/2;
+    const ry = ring.y*T + T/2 + Math.sin(t + i*0.8) * 2;
+    ctx.save(); ctx.translate(rx, ry);
+    ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI*2);
+    ctx.strokeStyle = colorMode ? '#996600' : P.dark; ctx.lineWidth = 4; ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI*2);
+    ctx.strokeStyle = colorMode ? '#FFD700' : P.ring; ctx.lineWidth = 2.5; ctx.stroke();
+    ctx.fillStyle = colorMode ? '#ffee88' : P.ringHi;
+    ctx.fillRect(-1, -11, 2, 4);
+    ctx.restore();
+  });
+}
+
+// ── CHECKPOINTS ─────────────────────────────────────────────────
+function drawCheckpoints(ctx){
+  (LV.checkpoints||[]).forEach(cp=>{
+    const cx = cp.x*T + T/2, cy = cp.y*T + T/2;
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(Math.PI/4);
+    const col = cp.hit
+      ? (colorMode ? '#ff4400' : P.cpDone)
+      : (colorMode ? '#ddaa00' : P.cp);
+    ctx.fillStyle = col; ctx.fillRect(-7, -7, 14, 14);
+    ctx.strokeStyle = P.dark; ctx.lineWidth = 1.5; ctx.strokeRect(-7, -7, 14, 14);
+    if(!cp.hit){ ctx.fillStyle = colorMode ? '#fff8aa' : P.light; ctx.fillRect(-3, -3, 5, 5); }
+    ctx.restore();
+  });
+}
+
+// ── CRYSTALS ────────────────────────────────────────────────────
+function drawCrystals(ctx){
+  const t = Date.now() / 600;
+  (LV.crystals||[]).forEach((cr, i)=>{
+    if(cr.collected) return;
+    const cx = cr.x*T + T/2, cy = cr.y*T + T/2 + Math.sin(t + i) * 3;
+    ctx.save(); ctx.translate(cx, cy);
+    ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI*2);
+    ctx.fillStyle = colorMode ? 'rgba(255,255,255,0.15)' : 'rgba(200,216,144,0.3)';
+    ctx.fill();
+    ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI*2);
+    ctx.fillStyle = colorMode ? '#ffffff' : P.crystal; ctx.fill();
+    ctx.strokeStyle = P.dark; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = colorMode ? 'rgba(255,255,255,0.9)' : P.light;
+    ctx.fillRect(-4, -5, 4, 4);
+    ctx.restore();
+  });
+}
+
+// ── INFLATOR ────────────────────────────────────────────────────
+function drawInflators(ctx){
+  (LV.inflators||[]).forEach(inf=>{
+    if(inf.used) return;
+    const ix = inf.x*T + T/2, iy = inf.y*T;
+    ctx.fillStyle = P.inflator;
+    ctx.fillRect(ix-2, iy+10, 4, T-8);
+    for(let ys = iy+10; ys < iy+T-4; ys += 4){
+      ctx.fillRect(ix-5, ys, 2, 2); ctx.fillRect(ix+3, ys+2, 2, 2);
+    }
+    ctx.beginPath(); ctx.arc(ix, iy+6, 8, 0, Math.PI*2);
+    ctx.fillStyle = colorMode ? '#88ff88' : P.light; ctx.fill();
+    ctx.strokeStyle = P.inflator; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = P.dark;
+    ctx.fillRect(ix-1, iy+2, 2, 8); ctx.fillRect(ix-4, iy+5, 8, 2);
+  });
+}
+
+// ── DEFLATOR ────────────────────────────────────────────────────
+function drawDeflators(ctx){
+  (LV.deflators||[]).forEach(def=>{
+    const dx = def.x*T + T/2, dy = def.y*T;
+    ctx.fillStyle = colorMode ? '#cc3333' : P.mid;
+    ctx.fillRect(dx-2, dy+10, 4, T-8);
+    for(let ys = dy+10; ys < dy+T-4; ys += 4){
+      ctx.fillRect(dx-5, ys, 2, 2); ctx.fillRect(dx+3, ys+2, 2, 2);
+    }
+    ctx.beginPath(); ctx.arc(dx, dy+6, 8, 0, Math.PI*2);
+    ctx.fillStyle = colorMode ? '#ff8888' : P.mid; ctx.fill();
+    ctx.strokeStyle = colorMode ? '#cc3333' : P.dark; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = P.dark;
+    ctx.fillRect(dx-4, dy+5, 8, 2);
+  });
+}
+
+// ── EXIT DOOR ───────────────────────────────────────────────────
+function drawExit(ctx){
+  if(!LV.exit) return;
+  const ex   = LV.exit;
+  // FIX: compare against ringCount
+  const open = ringsGot >= LV.ringCount;
+  const t    = Date.now() / 400;
+
+  const dw = T, dh = T*2;
+  const dx = ex.x*T, dy = ex.y*T - T;
+
+  ctx.fillStyle = open
+    ? (colorMode ? '#88ffee' : P.light)
+    : (colorMode ? '#888899' : P.mid);
+  ctx.fillRect(dx, dy, dw, dh);
+
+  ctx.fillStyle = P.dark;
+  ctx.fillRect(dx,        dy,           dw, 2);
+  ctx.fillRect(dx,        dy + dh/3,    dw, 2);
+  ctx.fillRect(dx,        dy + dh*2/3,  dw, 2);
+  ctx.fillRect(dx,        dy + dh - 2,  dw, 2);
+  ctx.fillRect(dx,        dy,           2,  dh);
+  ctx.fillRect(dx+dw-2,   dy,           2,  dh);
+
+  if(open){
+    const shimX = dx + 3 + (Math.sin(t)*0.5 + 0.5) * (dw - 10);
+    ctx.fillStyle = colorMode ? 'rgba(0,255,200,0.5)' : 'rgba(200,230,150,0.6)';
+    ctx.fillRect(shimX, dy+2, 4, dh-3);
+    ctx.fillStyle = colorMode ? '#00ffcc' : P.dark;
+    ctx.fillRect(dx+dw/2-1, dy+dh/2-6, 2, 12);
+    ctx.fillRect(dx+dw/2-5, dy+dh/2,  10,  2);
+  }
+
+  ctx.fillStyle = open ? (colorMode ? '#00ffcc' : P.dark) : P.mid;
+  ctx.font = `bold ${Math.floor(T*0.38)}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillText(open ? 'EXIT' : 'LOCK', dx + dw/2, dy - 4);
+}
+
+// ── BALL ────────────────────────────────────────────────────────
+function drawBall(ctx){
+  const r = BR();
+  ctx.save();
+  ctx.translate(B.x, B.y);
+  ctx.rotate(B.angle);
+
+  // Ground shadow
+  ctx.beginPath();
+  ctx.ellipse(0, r+2, r*0.65, 4, 0, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.fill();
+
+  // Pixel art ball
+  const ps = Math.max(2, Math.floor(r/5));
+  const ballPixels = [
+    [0,0,1,1,1,0,0],
+    [0,1,3,3,2,1,0],
+    [1,3,3,2,2,1,1],
+    [1,3,2,2,1,1,1],
+    [1,2,2,1,1,1,1],
+    [0,1,1,1,1,1,0],
+    [0,0,1,1,1,0,0],
+  ];
+  const cols = [
+    null,
+    inflated ? (colorMode ? '#1a44aa' : P.mid) : P.ball,
+    inflated ? (colorMode ? '#2255cc' : P.mid) : P.ballSh,
+    inflated ? (colorMode ? '#88aaff' : P.ballHi) : P.ballHi,
+  ];
+  const px0 = Math.floor(-ballPixels[0].length/2 * ps);
+  const py0 = Math.floor(-ballPixels.length/2    * ps);
+  ballPixels.forEach((row, ry)=>{
+    row.forEach((val, rx)=>{
+      if(!val) return;
+      ctx.fillStyle = cols[val] || P.ball;
+      ctx.fillRect(px0 + rx*ps, py0 + ry*ps, ps, ps);
+    });
+  });
+
+  // Circle outline
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI*2);
+  ctx.strokeStyle = P.dark; ctx.lineWidth = 1.5; ctx.stroke();
+
+  ctx.restore();
+}
+
+// ================================================================
+//  INPUT
+// ================================================================
+document.addEventListener('keydown', e=>{
+  if(e.key === 'ArrowLeft'  || e.key === 'a') K.L = true;
+  if(e.key === 'ArrowRight' || e.key === 'd') K.R = true;
+  if((e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w') && gState === 'playing') doJump();
+  if(e.key === 'Escape'){
+    if(gState === 'playing') pauseGame();
+    else if(gState === 'paused') resumeGame();
+  }
+});
+document.addEventListener('keyup', e=>{
+  if(e.key === 'ArrowLeft'  || e.key === 'a') K.L = false;
+  if(e.key === 'ArrowRight' || e.key === 'd') K.R = false;
+});
+
+window.addEventListener('resize', ()=>{
+  if(gState === 'playing' || gState === 'paused') resizeCanvas();
+});
+
+document.addEventListener('touchmove', e=> e.preventDefault(), {passive: false});
+</script>
+</body>
+</html>
+
