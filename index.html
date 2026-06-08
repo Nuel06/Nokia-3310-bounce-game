@@ -3,920 +3,373 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Bounce 3310</title>
+<title>Bounce Classic - Level 1 Remake</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-html,body{width:100%;height:100%;overflow:hidden;touch-action:none;background:#8a9a6a;}
-:root{
-  --lcd:    #8fa870;
-  --dark:   #1a2a0a;
-  --mid:    #4a6a2a;
-  --light:  #c8d890;
-  --white:  #ddeaaa;
-  --hud-bg: #1a2a0a;
-  --hud-fg: #8fa870;
-}
-body,#app{width:100%;height:100%;}
-#app{position:relative;display:flex;align-items:center;justify-content:center;
-     font-family:'Press Start 2P',monospace;background:#3a4a2a;}
+html,body{width:100%;height:100%;overflow:hidden;touch-action:none;background:#8fa870;}
+#app{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:'Press Start 2P',monospace;}
 
+/* Screen Handlers */
 .screen{display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;}
 .screen.active{display:flex;}
 
-/* ============ SPLASH ============ */
-#splash{background:#3a4a2a;gap:16px;padding:24px;}
-.nokia-device{
-  width:min(85vw,320px);
-  background:#2a3a1a;
-  border-radius:24px 24px 40px 40px;
-  padding:12px 12px 20px;
-  display:flex;flex-direction:column;align-items:center;gap:10px;
-  box-shadow:0 8px 32px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.05);
-  border:2px solid #1a2a0a;
-}
-.nokia-top-strip{width:100%;height:6px;background:#1a2a0a;border-radius:4px 4px 0 0;margin-bottom:4px;}
-.lcd-screen{
-  width:100%;background:var(--lcd);
-  border:3px solid #1a2a0a;border-radius:4px;
-  padding:14px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;
-  box-shadow:inset 0 2px 8px rgba(0,0,0,0.3);
-  image-rendering:pixelated;
-}
-.nokia-label{font-size:7px;color:#8fa870;letter-spacing:4px;text-transform:uppercase;font-family:'Press Start 2P',monospace;}
-.splash-title{font-size:clamp(18px,5vw,28px);color:var(--dark);text-align:center;line-height:1.5;
-  font-family:'Press Start 2P',monospace;text-shadow:2px 2px 0 var(--mid);}
-.splash-sub{font-size:6px;color:var(--mid);letter-spacing:2px;text-align:center;font-family:'Press Start 2P',monospace;}
-.splash-ball-row{display:flex;align-items:flex-end;gap:0;margin:4px 0;}
-.px-ball{image-rendering:pixelated;width:28px;height:28px;animation:sbb .8s ease-in-out infinite alternate;}
-@keyframes sbb{from{transform:translateY(0)}to{transform:translateY(-10px)}}
-.px-shadow{width:18px;height:4px;background:var(--mid);border-radius:50%;margin-left:5px;
-  animation:sbs .8s ease-in-out infinite alternate;opacity:.5;}
-@keyframes sbs{from{transform:scaleX(1)}to{transform:scaleX(.5)}}
-.nokia-btn-row{display:flex;gap:10px;margin-top:4px;}
-.nk-btn{
-  background:#1a2a0a;color:#8fa870;
-  border:2px solid #0a1a00;border-radius:6px;
-  font-family:'Press Start 2P',monospace;font-size:7px;
-  padding:10px 18px;cursor:pointer;letter-spacing:1px;
-  text-transform:uppercase;transition:.1s;
-  box-shadow:0 3px 0 #0a1a00;
-}
-.nk-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #0a1a00;}
-.nk-btn-g{background:#3a5a2a;color:#c8d890;}
-.mode-row{display:none;gap:10px;align-items:center;font-size:6px;color:#6a8a4a;font-family:'Press Start 2P',monospace;}
-.tog{width:36px;height:18px;background:#0a1a00;border-radius:9px;position:relative;cursor:pointer;
-  border:2px solid #1a2a0a;transition:.2s;}
-.tog-th{width:12px;height:12px;background:#8fa870;border-radius:50%;position:absolute;top:1px;left:1px;transition:.2s;}
-.color-mode .tog-th{transform:translateX(16px);background:#FFD700;}
+/* Nokia Red/Blue Aesthetics matched to Walkthrough Images */
+#gameScreen{background:#54baff;}
+#hud{position:absolute;top:0;left:0;right:0;height:40px;background:rgba(0,0,0,0.2);display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-size:10px;color:#fff;z-index:20;}
+#gameCanvas{display:block;image-rendering:pixelated;background:#54baff;}
 
-/* ============ HUD ============ */
-#hud{position:absolute;top:0;left:0;right:0;height:32px;
-  background:var(--hud-bg);display:flex;align-items:center;
-  justify-content:space-between;padding:0 10px;
-  font-family:'Press Start 2P',monospace;font-size:6px;color:var(--hud-fg);
-  z-index:20;border-bottom:2px solid #0a1a00;image-rendering:pixelated;}
-.hud-lives{display:flex;gap:4px;align-items:center;}
-.hud-rings{color:#c8d890;}
-.hud-score{color:#8fa870;}
-.hud-pause{cursor:pointer;color:#c8d890;font-size:10px;}
+/* Controls Overlay */
+#controls{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-between;padding:12px 24px;z-index:30;pointer-events:none;}
+.cb{width:70px;height:70px;background:rgba(255,255,255,0.25);border:3px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff;cursor:pointer;pointer-events:all;user-select:none;}
+.cb:active{background:rgba(255,255,255,0.5);}
+.cb-j{border-radius:12px;width:90px;font-size:12px;}
 
-/* ============ CANVAS ============ */
-#gameCanvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;
-  border:0;background:var(--lcd);}
-
-/* ============ CONTROLS ============ */
-#controls{position:fixed;bottom:0;left:0;right:0;
-  display:flex;justify-content:space-between;align-items:flex-end;
-  padding:6px 14px 12px;z-index:30;pointer-events:none;
-  background:linear-gradient(transparent,rgba(42,58,26,0.85));}
-.cb{width:64px;height:64px;
-  background:rgba(26,42,10,0.7);border:2px solid rgba(143,168,112,0.4);
-  border-radius:8px;display:flex;align-items:center;justify-content:center;
-  font-size:18px;color:rgba(200,216,144,0.9);cursor:pointer;pointer-events:all;
-  user-select:none;transition:.08s;font-family:'Press Start 2P',monospace;}
-.cb:active{background:rgba(143,168,112,0.3);transform:scale(.93);}
-.cb-j{width:54px;height:54px;font-size:11px;color:rgba(200,216,144,0.8);align-self:center;}
-
-/* ============ OVERLAYS ============ */
-.overlay{display:none;position:absolute;inset:0;
-  background:rgba(10,26,0,0.88);z-index:40;
-  flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;}
+/* Popups */
+.overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,0.75);z-index:40;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
 .overlay.show{display:flex;}
-.ov-lcd{background:var(--lcd);border:3px solid var(--dark);border-radius:4px;
-  padding:18px 22px;display:flex;flex-direction:column;align-items:center;gap:12px;
-  max-width:300px;width:100%;}
-.ov-title{font-size:12px;color:var(--dark);text-align:center;font-family:'Press Start 2P',monospace;}
-.ov-sub{font-size:7px;color:var(--mid);text-align:center;line-height:2;font-family:'Press Start 2P',monospace;}
-
-/* ============ LEVEL SELECT ============ */
-#levelSelect{background:#2a3a1a;padding:16px;gap:12px;overflow-y:auto;}
-#levelSelect h2{font-size:9px;color:#8fa870;font-family:'Press Start 2P',monospace;}
-.lv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;width:100%;max-width:320px;}
-.lv-cell{aspect-ratio:1;border:2px solid #3a5a2a;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:3px;cursor:pointer;background:#1a2a0a;transition:.1s;}
-.lv-cell.unlocked{border-color:#8fa870;background:#2a3a1a;}
-.lv-cell.done{border-color:#c8d890;background:#3a5a2a;}
-.lv-cell.locked{opacity:.3;pointer-events:none;}
-.lv-cell:active{transform:scale(.9);}
-.lv-num{font-size:9px;color:#c8d890;font-family:'Press Start 2P',monospace;}
-.lv-r{font-size:6px;color:#6a8a4a;font-family:'Press Start 2P',monospace;}
-.back-btn{position:absolute;top:10px;left:10px;font-size:6px;color:#8fa870;
-  border:1px solid #3a5a2a;padding:5px 8px;cursor:pointer;background:#1a2a0a;
-  z-index:50;font-family:'Press Start 2P',monospace;}
-.back-btn:active{background:#8fa870;color:#1a2a0a;}
-
-#howToPlay{background:#2a3a1a;padding:16px 20px;gap:10px;overflow-y:auto;}
-#howToPlay h2{font-size:9px;color:#c8d890;font-family:'Press Start 2P',monospace;}
-.hi{display:flex;gap:10px;align-items:flex-start;font-size:6px;color:#8fa870;
-  line-height:2;max-width:320px;font-family:'Press Start 2P',monospace;}
-.hic{font-size:14px;flex-shrink:0;width:22px;text-align:center;}
-
-#gameScreen{background:var(--lcd);}
+.ov-box{background:#cc4411;border:4px solid #fff;border-radius:8px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:16px;color:#fff;text-align:center;}
+.nk-btn{background:#fff;color:#cc4411;border:none;padding:10px 20px;font-family:'Press Start 2P';font-size:10px;cursor:pointer;border-radius:4px;}
+.nk-btn:active{transform:scale(0.95);}
 </style>
 </head>
 <body>
 <div id="app">
 
-<div id="splash" class="screen active">
-  <div class="nokia-device" id="nokiaDevice">
-    <div class="nokia-top-strip"></div>
-    <div class="lcd-screen">
-      <div class="nokia-label">Nokia 3310</div>
-      <div style="display:flex;gap:8px;align-items:flex-end;margin:4px 0;">
-        <svg class="px-ball" viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">
-          <rect x="3" y="0" width="8" height="1" fill="#1a2a0a"/>
-          <rect x="1" y="1" width="2" height="1" fill="#1a2a0a"/><rect x="3" y="1" width="2" height="1" fill="#4a6a2a"/><rect x="5" y="1" width="4" height="1" fill="#1a2a0a"/><rect x="9" y="1" width="2" height="1" fill="#1a2a0a"/><rect x="11" y="1" width="2" height="1" fill="#1a2a0a"/>
-          <rect x="1" y="2" width="1" height="1" fill="#1a2a0a"/><rect x="2" y="2" width="2" height="1" fill="#c8d890"/><rect x="4" y="2" width="1" height="1" fill="#8fa870"/><rect x="5" y="2" width="5" height="1" fill="#4a6a2a"/><rect x="10" y="2" width="2" height="1" fill="#1a2a0a"/>
-          <rect x="0" y="3" width="1" height="1" fill="#1a2a0a"/><rect x="1" y="3" width="1" height="1" fill="#c8d890"/><rect x="2" y="3" width="2" height="1" fill="#c8d890"/><rect x="4" y="3" width="6" height="1" fill="#4a6a2a"/><rect x="10" y="3" width="2" height="1" fill="#1a2a0a"/><rect x="12" y="3" width="1" height="1" fill="#1a2a0a"/>
-          <rect x="0" y="4" width="1" height="1" fill="#1a2a0a"/><rect x="1" y="4" width="2" height="1" fill="#8fa870"/><rect x="3" y="4" width="7" height="1" fill="#4a6a2a"/><rect x="10" y="4" width="2" height="1" fill="#1a2a0a"/><rect x="12" y="4" width="1" height="1" fill="#1a2a0a"/>
-          <rect x="0" y="5" width="1" height="1" fill="#1a2a0a"/><rect x="1" y="5" width="11" height="1" fill="#4a6a2a"/><rect x="12" y="5" width="1" height="1" fill="#1a2a0a"/>
-          <rect x="0" y="6" width="1" height="1" fill="#1a2a0a"/><rect x="1" y="6" width="11" height="1" fill="#1a2a0a"/><rect x="12" y="6" width="1" height="1" fill="#1a2a0a"/>
-          <rect x="0" y="7" width="1" height="1" fill="#1a2a0a"/><rect x="1" y="7" width="11" height="1" fill="#1a2a0a"/><rect x="12" y="7" width="1" height="1" fill="#1a2a0a"/>
-          <rect x="0" y="8" width="1" height="1" fill="#1a2a0a"/><rect x="1" y="8" width="11" height="4" fill="#4a6a2a"/><rect x="12" y="8" width="1" height="1" fill="#1a2a0a"/>
-          <rect x="0" y="9" width="1" height="1" fill="#1a2a0a"/><rect x="1" y="9" width="11" height="1" fill="#4a6a2a"/><rect x="12" y="9" width="1" height="1" fill="#1a2a0a"/>
-          <rect x="1" y="10" width="1" height="1" fill="#1a2a0a"/><rect x="2" y="10" width="9" height="1" fill="#4a6a2a"/><rect x="11" y="10" width="1" height="1" fill="#1a2a0a"/><rect x="12" y="10" width="1" height="1" fill="#1a2a0a"/>
-          <rect x="1" y="11" width="1" height="1" fill="#1a2a0a"/><rect x="2" y="11" width="9" height="1" fill="#1a2a0a"/><rect x="11" y="11" width="2" height="1" fill="#1a2a0a"/>
-          <rect x="3" y="12" width="8" height="1" fill="#1a2a0a"/>
-          <rect x="4" y="13" width="1" height="1" fill="#1a2a0a"/><rect x="9" y="13" width="1" height="1" fill="#1a2a0a"/>
-        </svg>
-        <div class="px-shadow"></div>
+  <!-- Menu Screen -->
+  <div id="splash" class="screen active" style="background:#cc4411; color:#fff; gap:20px;">
+    <h1 style="font-size:24px; text-align:center; line-height:1.6;">BOUNCE<br>CLASSIC</h1>
+    <p style="font-size:8px; color:#ffcc00;">LEVEL 1 ACCURATE RECREATION</p>
+    <button class="nk-btn" onclick="startLevel1()" style="font-size:14px; padding:12px 24px;">PLAY GAME</button>
+  </div>
+
+  <!-- Main Simulator View -->
+  <div id="gameScreen" class="screen">
+    <div id="hud">
+      <div>🔴 X<span id="hLives">3</span></div>
+      <div>◎ <span id="hRings">0</span>/<span id="hTotal">4</span></div>
+      <div id="hScore">0000000</div>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="controls">
+      <div style="display:flex; gap:16px;">
+        <button class="cb" ontouchstart="K.L=true;event.preventDefault()" ontouchend="K.L=false" onmousedown="K.L=true" onmouseup="K.L=false" onmouseleave="K.L=false">◀</button>
+        <button class="cb" ontouchstart="K.R=true;event.preventDefault()" ontouchend="K.R=false" onmousedown="K.R=true" onmouseup="K.R=false" onmouseleave="K.R=false">▶</button>
       </div>
-      <div class="splash-title">BOUNCE<br>3310</div>
-      <div class="splash-sub">COLLECT ALL RINGS</div>
+      <button class="cb cb-j" ontouchstart="doJump();event.preventDefault()" onmousedown="doJump()">JUMP</button>
     </div>
-    <div class="nokia-btn-row">
-      <button class="nk-btn" onclick="showHowToPlay()">▶ PLAY</button>
-      <button class="nk-btn nk-btn-g" onclick="showLevelSelect()">LEVELS</button>
+
+    <!-- Win/Loss States -->
+    <div class="overlay" id="oComplete">
+      <div class="ov-box">
+        <h2>LEVEL CLEAR!</h2>
+        <p>Excellent 3-Star Run</p>
+        <button class="nk-btn" onclick="toMenu()">MENU</button>
+      </div>
     </div>
-  </div>
-</div>
 
-<div id="howToPlay" class="screen">
-  <div class="back-btn" onclick="showSplash()">◀ BACK</div>
-  <h2 style="color:#c8d890;margin-top:32px">HOW TO PLAY</h2>
-  <div class="hi"><div class="hic">◎</div><div><b style="color:#c8d890">RINGS</b> — Collect ALL rings to unlock the EXIT DOOR.</div></div>
-  <div class="hi"><div class="hic">▣</div><div><b style="color:#c8d890">EXIT</b> — Door on right. Glows when all rings collected.</div></div>
-  <div class="hi"><div class="hic">|</div><div><b style="color:#c8d890">NEEDLES</b> — Touch = burst. You lose a life.</div></div>
-  <div class="hi"><div class="hic">◇</div><div><b style="color:#c8d890">CHECKPOINT</b> — Diamond. Touch to save respawn point.</div></div>
-  <div class="hi"><div class="hic">↑</div><div><b style="color:#c8d890">INFLATOR</b> — Makes ball BIG. Jump over high structures!</div></div>
-  <div class="hi"><div class="hic">↓</div><div><b style="color:#c8d890">DEFLATOR</b> — Returns ball to normal size.</div></div>
-  <button class="nk-btn" onclick="startLevel(0)" style="margin-top:10px">START ▶</button>
-</div>
-
-<div id="levelSelect" class="screen">
-  <div class="back-btn" onclick="showSplash()">◀ BACK</div>
-  <h2 style="margin-top:30px">SELECT LEVEL</h2>
-  <div class="lv-grid" id="lvGrid"></div>
-</div>
-
-<div id="gameScreen" class="screen">
-  <div id="hud">
-    <div class="hud-lives" id="hLives"></div>
-    <div class="hud-rings">◎<span id="hR">0</span>/<span id="hT">0</span></div>
-    <div class="hud-score" id="hScore">0</div>
-    <div style="font-size:7px;color:#6a8a4a;min-width:60px;text-align:center" id="hMsg"></div>
-    <div class="hud-pause" onclick="pauseGame()">❙❙</div>
-  </div>
-  <canvas id="gameCanvas"></canvas>
-  <div id="controls">
-    <button class="cb" id="bL"
-      ontouchstart="K.L=true;event.preventDefault()" ontouchend="K.L=false;event.preventDefault()"
-      onmousedown="K.L=true" onmouseup="K.L=false" onmouseleave="K.L=false">◀</button>
-    <button class="cb cb-j" id="bJ"
-      ontouchstart="doJump();event.preventDefault()"
-      onmousedown="doJump()">JUMP</button>
-    <button class="cb" id="bR"
-      ontouchstart="K.R=true;event.preventDefault()" ontouchend="K.R=false;event.preventDefault()"
-      onmousedown="K.R=true" onmouseup="K.R=false" onmouseleave="K.R=false">▶</button>
+    <div class="overlay" id="oGameOver">
+      <div class="ov-box">
+        <h2>GAME OVER</h2>
+        <button class="nk-btn" onclick="startLevel1()">RETRY</button>
+      </div>
+    </div>
   </div>
 
-  <div class="overlay" id="oPause">
-    <div class="ov-lcd">
-      <div class="ov-title">— PAUSE —</div>
-      <button class="nk-btn" onclick="resumeGame()">RESUME</button>
-      <button class="nk-btn nk-btn-g" onclick="showLevelSelect()">LEVELS</button>
-    </div>
-  </div>
-  <div class="overlay" id="oComplete">
-    <div class="ov-lcd">
-      <div class="ov-title">LEVEL CLEAR!</div>
-      <div class="ov-sub" id="oMsg"></div>
-      <button class="nk-btn" id="btnNext" onclick="nextLevel()">NEXT ▶</button>
-      <button class="nk-btn nk-btn-g" onclick="showLevelSelect()">LEVELS</button>
-    </div>
-  </div>
-  <div class="overlay" id="oGameOver">
-    <div class="ov-lcd">
-      <div class="ov-title">GAME OVER</div>
-      <div class="ov-sub">LEVEL <span id="goLv"></span></div>
-      <button class="nk-btn" onclick="retryLevel()">RETRY</button>
-      <button class="nk-btn nk-btn-g" onclick="showLevelSelect()">LEVELS</button>
-    </div>
-  </div>
-  <div class="overlay" id="oWin">
-    <div class="ov-lcd">
-      <div class="ov-title">YOU WIN!</div>
-      <div class="ov-sub">ALL LEVELS CLEAR!<br>TRUE CHAMPION!</div>
-      <button class="nk-btn" onclick="startLevel(0)">PLAY AGAIN</button>
-      <button class="nk-btn nk-btn-g" onclick="showSplash()">MENU</button>
-    </div>
-  </div>
 </div>
 
-</div>
 <script>
 'use strict';
 
-// ================================================================
-//  MONOCHROME PALETTE
-// ================================================================
-const MONO = {
-  bg:'#8fa870', sky:'#c8d890', dark:'#1a2a0a', mid:'#4a6a2a', light:'#c8d890',
-  brick1:'#4a6a2a', brick2:'#1a2a0a', brickH:'#8fa870',
-  ball:'#1a2a0a', ballHi:'#c8d890', ballSh:'#4a6a2a',
-  ring:'#1a2a0a', ringHi:'#c8d890',
-  needle:'#1a2a0a', jack:'#1a2a0a',
-  cp:'#1a2a0a', cpDone:'#4a6a2a',
-  exit:'#1a2a0a', exitOpen:'#1a2a0a',
-  water:'#4a6a2a', waterH:'#8fa870',
-  inflator:'#1a2a0a', crystal:'#c8d890',
+const T = 40;  // True structural block grid footprint
+const BH = 9;  // Viewport row constraints matching screenshots
+
+// Tuned Physics Constants
+const GRAV = 0.45;
+const ACCEL = 0.24;
+const MAX_SPD = 4.5;
+const FRIC = 0.88;
+const JUMP_FORCE = -9.8;
+const JUMP_BIG = -12.0;
+const BOUNCE_ELASTICITY = 0.28;
+
+let canvas, ctx;
+let ringsGot = 0, totalRings = 4, score = 0, lives = 3;
+let gState = 'menu', raf = 0;
+
+let B = { x:0, y:0, vx:0, vy:0, radius:14, angle:0, onGround:false, inflated:false, dead:false };
+let camX = 0, respX = 60, respY = 240;
+const K = { L: false, R: false };
+
+// Absolute Block-by-Block Blueprint Extracted from Walkthrough Frames
+const LEVEL1 = {
+  widthInTiles: 52,
+  // Solid Block Formations
+  blocks: [
+    // Flat Baseline Foundation Track Across Entire Level
+    {x: 0, y: 8, w: 52, h: 2},
+    
+    // Screens 1 & 2: Structural Roof Overhang & Initial Jump Pillar
+    {x: 0, y: 0, w: 18, h: 5},
+    {x: 18, y: 5, w: 4, h: 3}, // Jump Pillar Blockade
+
+    // Screens 3 & 4: Lower Floor track underneath hanging divider element
+    {x: 25, y: 0, w: 8, h: 5}, 
+
+    // Screens 5 & 6: Mid-air floating step-up section blocks
+    {x: 36, y: 5, w: 5, h: 1}, 
+    {x: 43, y: 4, w: 5, h: 1},
+
+    // Far boundary walls closing level geometry context loops
+    {x: 0, y: 0, w: 1, h: 8},
+    {x: 51, y: 0, w: 1, h: 8}
+  ],
+  // Entity Placements Matching Coordinates
+  rings: [
+    {x: 10 * T, y: 6.5 * T, collected: false}, // Screen 1 low floor item
+    {x: 28 * T, y: 6.5 * T, collected: false}, // Screen 4 narrow slot hoop
+    {x: 38 * T, y: 3.5 * T, collected: false}, // Screen 6 over floating step
+    {x: 45 * T, y: 2.0 * T, collected: false}  // Screen 8 high-altitude ring
+  ],
+  checkpoints: [
+    {x: 23 * T, y: 7 * T, hit: false}          // Screen 2 crystal positioner
+  ],
+  inflators: [
+    {x: 34 * T, y: 7 * T, used: false}          // Screen 5 structural pocket floor pump
+  ],
+  exit: {x: 49 * T, y: 6 * T}
 };
 
-let P = MONO;
-let colorMode = false;
-
-// ================================================================
-//  GAME CONSTANTS
-// ================================================================
-const T    = 32;    // tile size in px
-const BH   = 10;   // visible tile rows
-
-// Refactored continuous momentum variables
-const GRAV  = 0.48;
-const ACCEL = 0.28;
-const MAX_SPD = 4.2;
-const FRIC  = 0.85; 
-
-const JUMP_NORMAL = -10.5;
-const JUMP_BIG = -12.5;
-const BOUNCE_ELASTICITY = 0.26; // Bounciness multiplier
-
-// ================================================================
-//  ENTITY HELPERS
-// ================================================================
-const mkRing     = (x,y)         => ({x,y,collected:false,type:'ring'});
-const mkNeedle   = (x,y)         => ({x,y,type:'needle'});
-const mkCP       = (x,y)         => ({x,y,hit:false,type:'cp'});
-const mkInflator = (x,y)         => ({x,y,used:false,type:'inflator'});
-const mkDeflator = (x,y)         => ({x,y,type:'deflator'});
-const mkExit     = (x,y)         => ({x,y,type:'exit'});
-
-// ================================================================
-//  LEVELS 
-// ================================================================
-const LEVELS = [
-{
-  name: 'LEVEL 1',
-  ringCount: 6,
-  lvW: 46,
-
-  ceil:   [[0, 0, 46, 1]],
-  ground: [[0, 8, 46, 2]],
-
-  walls: [
-    // Starting boundary wall left
-    [0,  1,  1, 7],
-    // Low hanging roof passage gap
-    [6,  1,  2, 5], 
-    // Small obstacle step block
-    [11, 7,  1, 1],
-    // Big Wall Divider Challenge (Forced Expansion Area)
-    [21, 4,  2, 4],
-    // Drop pit wall block
-    [28, 6,  2, 2],
-    // Narrow end corridor ceiling block
-    [33, 1,  8, 5],
-    // Final exit map wall boundary
-    [45, 1,  1, 7]
-  ],
-
-  platforms: [],
-
-  rings: [
-    mkRing(7, 7),   // Ring 1: In the narrow gap beneath the hanging blocks
-    mkRing(13, 5),  // Ring 2: Floating directly over the small platform jump
-    mkRing(17, 5),  // Ring 3: Directly over the hazardous spike field
-    mkRing(25, 3),  // Ring 4: Highly suspended over the big structural divider wall
-    mkRing(30, 4),  // Ring 5: Placed inside the deep drop zone pit floor
-    mkRing(38, 7),  // Ring 6: Hidden safely down inside the narrow deflated zone corridor
-  ],
-
-  needles: [
-    mkNeedle(16, 7), // Spikes positioned inside the floor dip trap
-    mkNeedle(17, 7),
-    mkNeedle(18, 7)
-  ],
-
-  jacks: [],
-  checkpoints: [
-    mkCP(14, 7),
-    mkCP(27, 7)
-  ],
-  crystals: [],
-  inflators: [
-    mkInflator(20, 7) // Inflator bubble to grow the ball before the massive wall
-  ],
-  deflators: [
-    mkDeflator(32, 7) // Deflator to switch back down to match narrow ceiling height profile
-  ],
-  waters:    [],
-  exit: mkExit(43, 6),
-  start: {x: 2, y: 7},
-}
-];
-
-// ================================================================
-//  GAME STATE
-// ================================================================
-const save = JSON.parse(localStorage.getItem('b3310v4')||'{}');
-let LV={}, lvIdx=0, lives=3, ringsGot=0, score=0;
-let B={}, camX=0, respX=0, respY=0;
-let inflated=false;
-let gState='idle', raf=0, lastT=0, msgT=0;
-const K={L:false,R:false};
-
-// ================================================================
-//  NAVIGATION
-// ================================================================
-function setScreen(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-}
-function showSplash(){ cancelAnimationFrame(raf); gState='idle'; setScreen('splash'); }
-function showHowToPlay(){ setScreen('howToPlay'); }
-function showLevelSelect(){ cancelAnimationFrame(raf); gState='idle'; buildLvGrid(); setScreen('levelSelect'); }
-
-function buildLvGrid(){
-  const g = document.getElementById('lvGrid'); g.innerHTML = '';
-  LEVELS.forEach((lv, i)=>{
-    const d = document.createElement('div'); d.className = 'lv-cell';
-    const done = save[i];
-    const unlock = (i === 0 || save[i-1]);
-    if(done)        d.classList.add('done');
-    else if(unlock) d.classList.add('unlocked');
-    else            d.classList.add('locked');
-    d.innerHTML = `<div class="lv-num">${i+1}</div><div class="lv-r">${lv.ringCount}◎</div>`;
-    d.onclick = ()=> { if(unlock || done) startLevel(i); };
-    g.appendChild(d);
-  });
-}
-
-// ================================================================
-//  LEVEL INIT
-// ================================================================
-function startLevel(idx){
-  lvIdx = idx; lives = 3; score = 0;
+function startLevel1() {
   setScreen('gameScreen');
-  initLevel();
-  gState = 'playing'; lastT = 0;
+  canvas = document.getElementById('gameCanvas');
+  ctx = canvas.getContext('2d');
+  
+  lives = 3; score = 0; ringsGot = 0;
+  respX = 80; respY = 280;
+  
+  resetBall();
+  LEVEL1.rings.forEach(r => r.collected = false);
+  LEVEL1.checkpoints.forEach(c => c.hit = false);
+  LEVEL1.inflators.forEach(i => i.used = false);
+  
+  gState = 'playing';
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+  
   cancelAnimationFrame(raf);
   raf = requestAnimationFrame(loop);
 }
 
-function BR(){ return inflated ? 21 : 12; }
-
-function initLevel(){
-  const src = LEVELS[lvIdx];
-  LV = JSON.parse(JSON.stringify(src));
-  ringsGot = 0; inflated = false; msgT = 0;
-
-  const r = BR();
-  B = {
-    x: src.start.x * T + T/2,
-    y: src.start.y * T - r,   
-    vx: 0, vy: 0,
-    onGround: false,
-    coyote: 0,
-    jumps: 0,
-    angle: 0,
-    dead: false
-  };
-  respX = B.x; respY = B.y;
-  camX = 0;
-
-  document.getElementById('hR').textContent = '0';
-  document.getElementById('hT').textContent = LV.ringCount;
-  document.getElementById('hScore').textContent = '0';
-  document.getElementById('hMsg').textContent = '';
-  updateLivesHUD();
-  hideOverlays();
-  resizeCanvas();
+function resetBall() {
+  B.x = respX; B.y = respY;
+  B.vx = 0; B.vy = 0;
+  B.inflated = false; B.radius = 14;
+  B.dead = false; B.onGround = false;
 }
 
-function updateLivesHUD(){
-  const el = document.getElementById('hLives');
-  let html = '';
-  for(let i = 0; i < 5; i++){
-    html += `<svg width="10" height="10" viewBox="0 0 10 10" style="opacity:${i<lives?1:0.2}">
-      <circle cx="5" cy="5" r="4" fill="${P.ball}" stroke="${P.dark}" stroke-width="1"/>
-      <rect x="3" y="3" width="2" height="2" fill="${P.ballHi}" opacity="0.7"/>
-    </svg>`;
+function setScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function toMenu() { gState = 'menu'; setScreen('splash'); }
+
+function resizeCanvas() {
+  const gs = document.getElementById('gameScreen');
+  canvas.width = gs.clientWidth;
+  canvas.height = BH * T; 
+}
+
+function doJump() {
+  if (B.onGround && !B.dead) {
+    B.vy = B.inflated ? JUMP_BIG : JUMP_FORCE;
+    B.onGround = false;
   }
-  el.innerHTML = html;
-}
-
-function hideOverlays(){
-  ['oPause','oComplete','oGameOver','oWin'].forEach(id=>
-    document.getElementById(id).classList.remove('show'));
-}
-
-function resizeCanvas(){
-  const gs   = document.getElementById('gameScreen');
-  const c    = document.getElementById('gameCanvas');
-  const hudH = document.getElementById('hud').offsetHeight;
-  const ctrlH = 96;
-  c.width  = gs.clientWidth;
-  c.height = gs.clientHeight - hudH - ctrlH;
-  c.style.marginTop = hudH + 'px';
 }
 
 // ================================================================
-//  GAME LOOP
+//  GAME CYCLE MOTOR
 // ================================================================
-function loop(ts){
-  if(gState !== 'playing') return;
-  const dt = Math.min((ts - (lastT || ts)) / 16.67, 3);
-  lastT = ts;
-  update(dt);
+function loop() {
+  if (gState !== 'playing') return;
+  update();
   draw();
   raf = requestAnimationFrame(loop);
 }
 
-// ================================================================
-//  UPDATE
-// ================================================================
-function update(dt){
-  if(B.dead) return;
+function update() {
+  if (B.dead) return;
 
-  // Refactored progressive rolling speed calculations
-  if(K.L) {
-    B.vx -= ACCEL * dt;
-    if(B.vx < -MAX_SPD) B.vx = -MAX_SPD;
-  } else if(K.R) {
-    B.vx += ACCEL * dt;
-    if(B.vx > MAX_SPD) B.vx = MAX_SPD;
-  } else {
-    B.vx *= Math.pow(FRIC, dt);
-    if(Math.abs(B.vx) < 0.08) B.vx = 0;
-  }
+  // Horizontal Velocity Interpolation Curves
+  if (K.L) { B.vx -= ACCEL; if (B.vx < -MAX_SPD) B.vx = -MAX_SPD; }
+  else if (K.R) { B.vx += ACCEL; if (B.vx > MAX_SPD) B.vx = MAX_SPD; }
+  else { B.vx *= FRIC; if (Math.abs(B.vx) < 0.1) B.vx = 0; }
 
-  // Heavy Weight Gravity Action Curves
-  B.vy += GRAV * dt;
-  if(B.vy > 14) B.vy = 14;
+  B.vy += GRAV;
+  if (B.vy > 12) B.vy = 12;
 
-  if(B.onGround) B.coyote = 8;
-  else if(B.coyote > 0) B.coyote--;
+  // Move and Resolve Collisions
+  B.x += B.vx;
+  resolveCollisions('x');
+  B.y += B.vy;
   B.onGround = false;
+  resolveCollisions('y');
 
-  // Axis resolution iterations
-  B.x += B.vx * dt;
-  const lvPxW = LV.lvW * T;
-  let r = BR();
-  if(B.x - r < 0)      { B.x = r;          B.vx = 0; }
-  if(B.x + r > lvPxW)  { B.x = lvPxW - r;  B.vx = 0; }
-  resolveX();
+  B.angle += (B.vx / B.radius);
 
-  B.y += B.vy * dt;
-  resolveY();
+  // Dynamic Camera Track Framing
+  let idealCam = B.x - canvas.width * 0.4;
+  camX += (idealCam - camX) * 0.1;
+  camX = Math.max(0, Math.min(LEVEL1.widthInTiles * T - canvas.width, camX));
 
-  // Procedural texturing rotations
-  B.angle += (B.vx / r) * dt;
+  // Dynamic Trigger Checking Overlaps
+  checkTriggers();
+  
+  // UI Sync updates
+  document.getElementById('hLives').textContent = lives;
+  document.getElementById('hRings').textContent = ringsGot;
+  document.getElementById('hScore').textContent = String(Math.floor(score)).padStart(7, '0');
+}
 
-  // Camera smooth linear tracking interpolation
-  const canvas = document.getElementById('gameCanvas');
-  const tgt = B.x - canvas.width * 0.4;
-  camX += (tgt - camX) * 0.1;
-  const maxCam = Math.max(0, lvPxW - canvas.width);
-  camX = Math.max(0, Math.min(maxCam, camX));
+// ================================================================
+//  COLLISION ENGINE
+// ================================================================
+function resolveCollisions(axis) {
+  for (let b of LEVEL1.blocks) {
+    let bx = b.x * T, by = b.y * T, bw = b.w * T, bh = b.h * T;
+    
+    // Check bounding box overlap
+    if (B.x + B.radius > bx && B.x - B.radius < bx + bw &&
+        B.y + B.radius > by && B.y - B.radius < by + bh) {
+      
+      if (axis === 'x') {
+        if (B.vx > 0) { B.x = bx - B.radius; B.vx = 0; }
+        else if (B.vx < 0) { B.x = bx + bw + B.radius; B.vx = 0; }
+      } else {
+        if (B.vy > 0) { // Moving Downward
+          B.y = by - B.radius;
+          if (B.vy > 3.0) {
+            B.vy = -B.vy * BOUNCE_ELASTICITY; // Apply Elastic Impact Rebound
+          } else {
+            B.vy = 0; B.onGround = true;
+          }
+        } else if (B.vy < 0) { // Moving Upward
+          B.y = by + bh + B.radius; B.vy = 0;
+        }
+      }
+    }
+  }
+}
 
-  if(msgT > 0){ msgT -= dt; if(msgT <= 0) document.getElementById('hMsg').textContent = ''; }
-
-  score += Math.abs(B.vx) * 0.01;
-
-  // Collect rings
-  (LV.rings||[]).forEach(ring=>{
-    if(ring.collected) return;
-    const rx = ring.x*T + T/2, ry = ring.y*T + T/2;
-    if(dist(B.x, B.y, rx, ry) < r + 13){
-      ring.collected = true; ringsGot++; score += 500;
-      document.getElementById('hR').textContent = ringsGot;
-      document.getElementById('hScore').textContent = Math.floor(score);
-      if(ringsGot >= LV.ringCount) setMsg('EXIT OPEN!');
+function checkTriggers() {
+  // Hoops Rings
+  LEVEL1.rings.forEach(r => {
+    if (!r.collected && Math.hypot(B.x - r.x, B.y - r.y) < B.radius + 16) {
+      r.collected = true; ringsGot++; score += 500;
     }
   });
 
-  // Checkpoints
-  (LV.checkpoints||[]).forEach(cp=>{
-    if(cp.hit) return;
-    if(dist(B.x, B.y, cp.x*T+T/2, cp.y*T+T/2) < r + 14){
-      cp.hit = true; respX = cp.x * T + T/2; respY = cp.y * T + T/2; score += 200;
-      setMsg('CHECKPOINT!');
-      document.getElementById('hScore').textContent = Math.floor(score);
+  // Save State Crystals
+  LEVEL1.checkpoints.forEach(c => {
+    if (!c.hit && Math.hypot(B.x - c.x, B.y - c.y) < B.radius + 16) {
+      c.hit = true; respX = c.x; respY = c.y; score += 200;
     }
   });
 
   // Size Transformers
-  (LV.inflators||[]).forEach(inf=>{
-    if(inf.used) return;
-    if(dist(B.x, B.y, inf.x*T+T/2, inf.y*T+T/2) < r + 13){
-      inf.used = true; inflated = true; 
-      setMsg('BIG BALL!');
+  LEVEL1.inflators.forEach(i => {
+    if (!i.used && Math.hypot(B.x - i.x, B.y - i.y) < B.radius + 16) {
+      i.used = true; B.inflated = true; B.radius = 22; score += 300;
     }
   });
 
-  (LV.deflators||[]).forEach(def=>{
-    if(inflated && dist(B.x, B.y, def.x*T+T/2, def.y*T+T/2) < r + 13){
-      inflated = false; 
-      setMsg('SMALL BALL!');
+  // Level Clear Evaluation Track
+  if (ringsGot >= totalRings) {
+    let ex = LEVEL1.exit.x, ey = LEVEL1.exit.y;
+    if (Math.hypot(B.x - ex, B.y - ey) < B.radius + 20) {
+      gState = 'win';
+      document.getElementById('oComplete').classList.add('show');
     }
-  });
-
-  // Hazard Spikes
-  (LV.needles||[]).forEach(n=>{
-    const nx = n.x*T + T/2;
-    const ny = n.y*T + 4;   
-    if(dist(B.x, B.y, nx, ny) < r + 5) die();
-  });
-
-  // Level Ending Gate Checking routines
-  if(ringsGot >= LV.ringCount && LV.exit){
-    const ex = LV.exit;
-    if(dist(B.x, B.y, ex.x*T+T/2, ex.y*T+T/2) < r + 20) levelDone();
-  }
-
-  if(B.y > BH*T + 120) die();
-}
-
-function dist(ax,ay,bx,by){ return Math.sqrt((ax-bx)**2+(ay-by)**2); }
-function setMsg(t){ document.getElementById('hMsg').textContent = t; msgT = 90; }
-
-function getBlocks(){
-  const bl = [];
-  ['ground','ceil','walls','platforms'].forEach(k=>{
-    (LV[k]||[]).forEach(b=> bl.push({
-      x: b[0]*T, y: b[1]*T,
-      w: b[2]*T, h: b[3]*T
-    }));
-  });
-  return bl;
-}
-
-// ================================================================
-//  COLLISION RESOLUTION
-// ================================================================
-function resolveX(){
-  const r = BR();
-  getBlocks().forEach(b=>{
-    if(B.y + r > b.y + 2 && B.y - r < b.y + b.h - 2){
-      if(B.vx >= 0 && B.x + r > b.x && B.x - r < b.x){
-        B.x = b.x - r; B.vx = 0;
-      }
-      if(B.vx <= 0 && B.x - r < b.x + b.w && B.x + r > b.x + b.w){
-        B.x = b.x + b.w + r; B.vx = 0;
-      }
-    }
-  });
-}
-
-function resolveY(){
-  const r = BR();
-  getBlocks().forEach(b=>{
-    if(B.x + r > b.x + 2 && B.x - r < b.x + b.w - 2){
-      const ballBottom = B.y + r;
-      const ballTop    = B.y - r;
-      const blockMid   = b.y + b.h * 0.5;
-
-      // Ground Impact landing with added Bounce Elasticity
-      if(B.vy >= 0 && ballBottom > b.y && B.y < blockMid){
-        B.y = b.y - r;
-        if (B.vy > 3.5) { 
-          B.vy = -B.vy * BOUNCE_ELASTICITY; // Continuous bounce logic execution
-          B.onGround = false;
-        } else {
-          B.vy = 0;
-          B.onGround = true;
-          B.coyote   = 8;
-          B.jumps    = 0;
-        }
-      }
-      // Roof underside ceiling hit limits
-      if(B.vy < 0 && ballTop < b.y + b.h && B.y > blockMid){
-        B.y  = b.y + b.h + r;
-        B.vy = Math.abs(B.vy) * 0.1;
-      }
-    }
-  });
-}
-
-// ================================================================
-//  JUMPING
-// ================================================================
-function doJump(){
-  if(gState !== 'playing') return;
-  if(B.onGround || B.coyote > 0){
-    B.vy = inflated ? JUMP_BIG : JUMP_NORMAL; 
-    B.onGround = false; 
-    B.coyote = 0; 
   }
 }
 
 // ================================================================
-//  DIE / RESPAWN
+//  VISUAL GRAPHICS RENDER
 // ================================================================
-function die(){
-  if(B.dead) return;
-  B.dead = true; gState = 'dead';
-  lives--;
-  updateLivesHUD();
-  setTimeout(()=>{
-    if(lives <= 0){
-      document.getElementById('goLv').textContent = lvIdx + 1;
-      document.getElementById('oGameOver').classList.add('show');
-    } else {
-      inflated = false;
-      const r = BR();
-      B = { x:respX, y:respY - r, vx:0, vy:0,
-            onGround:false, jumps:0, angle:0, dead:false, coyote:0 };
-      gState = 'playing'; lastT = performance.now();
-      raf = requestAnimationFrame(loop);
-    }
-  }, 600);
-}
-
-function levelDone(){
-  gState = 'complete';
-  save[lvIdx] = true;
-  localStorage.setItem('b3310v4', JSON.stringify(save));
-  score += lives * 1000;
-  document.getElementById('hScore').textContent = Math.floor(score);
-  if(lvIdx >= LEVELS.length - 1){
-    document.getElementById('oWin').classList.add('show');
-  } else {
-    document.getElementById('oMsg').textContent =
-      `RINGS ${ringsGot}/${LV.ringCount}  SCORE ${Math.floor(score)}`;
-    document.getElementById('oComplete').classList.add('show');
-  }
-}
-
-function nextLevel(){
-  showSplash();
-}
-function retryLevel(){ lives = 3; startLevel(lvIdx); }
-function pauseGame(){ gState = 'paused'; document.getElementById('oPause').classList.add('show'); }
-function resumeGame(){
-  document.getElementById('oPause').classList.remove('show');
-  gState = 'playing'; lastT = performance.now();
-  raf = requestAnimationFrame(loop);
-}
-
-// ================================================================
-//  DRAW METHODS
-// ================================================================
-function draw(){
-  const canvas = document.getElementById('gameCanvas');
-  const ctx    = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
-  if(!ctx || W === 0 || H === 0) return;
-
-  ctx.fillStyle = P.sky;
-  ctx.fillRect(0, 0, W, H);
-
-  // Scanline overlay simulation
-  for(let sy = 0; sy < H; sy += 2){
-    ctx.fillStyle = 'rgba(0,0,0,0.03)';
-    ctx.fillRect(0, sy, W, 1);
-  }
-
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
   ctx.save();
-  const lvH_px = BH * T;
-  const offY   = Math.max(0, H - lvH_px);
-  ctx.translate(-Math.floor(camX), offY);
+  ctx.translate(-Math.floor(camX), 0);
 
-  drawBricks(ctx);
-  drawNeedles(ctx);
-  drawCheckpoints(ctx);
-  drawInflators(ctx);
-  drawDeflators(ctx);
-  drawRings(ctx);
-  drawExit(ctx);
-  drawBall(ctx);
-
-  ctx.restore();
-
-  if(gState === 'dead'){
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.fillRect(0, 0, W, H);
-  }
-}
-
-function drawBricks(ctx){
-  function renderBlock(bx, by, bw, bh){
-    ctx.fillStyle = P.brick1;
-    ctx.fillRect(bx, by, bw, bh);
-    ctx.fillStyle = P.brick2;
-    for(let row = 0; row * T < bh; row++){
-      ctx.fillRect(bx, by + row*T, bw, 2);
-      const offset = (row % 2 === 0) ? 0 : T/2;
-      for(let col = offset; col <= bw; col += T){
-        ctx.fillRect(bx + col, by + row*T, 2, T);
-      }
-    }
-    ctx.fillRect(bx, by + bh - 1, bw, 2);
-    ctx.fillStyle = P.brickH;
-    ctx.fillRect(bx, by, bw, 2);
-    ctx.fillRect(bx, by, 2, bh);
-  }
-  ['ground','ceil','walls','platforms'].forEach(k=>{
-    (LV[k]||[]).forEach(b=> renderBlock(b[0]*T, b[1]*T, b[2]*T, b[3]*T));
+  // Draw Structural Brick Groups
+  ctx.fillStyle = '#d84818'; 
+  LEVEL1.blocks.forEach(b => {
+    ctx.fillRect(b.x * T, b.y * T, b.w * T, b.h * T);
+    ctx.strokeStyle = '#a02800';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(b.x * T, b.y * T, b.w * T, b.h * T);
   });
-}
 
-function drawNeedles(ctx){
-  (LV.needles||[]).forEach(n=>{
-    const nx = n.x*T, ny = n.y*T;
-    ctx.fillStyle = P.needle;
+  // Rings
+  LEVEL1.rings.forEach(r => {
+    if (r.collected) return;
     ctx.beginPath();
-    ctx.moveTo(nx + T/2, ny + 2);
-    ctx.lineTo(nx + T/2 + 6, ny + T);
-    ctx.lineTo(nx + T/2 - 6, ny + T);
-    ctx.closePath(); ctx.fill();
-    ctx.fillStyle = P.light;
-    ctx.fillRect(nx + T/2, ny + T*0.5, 1, T*0.4);
+    ctx.arc(r.x, r.y, 14, 0, Math.PI * 2);
+    ctx.strokeStyle = '#ffcc00'; ctx.lineWidth = 4; ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(r.x, r.y, 14, 0, Math.PI * 2);
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke();
   });
-}
 
-function drawRings(ctx){
-  const t = Date.now() / 300;
-  (LV.rings||[]).forEach((ring, i)=>{
-    if(ring.collected) return;
-    const rx = ring.x*T + T/2;
-    const ry = ring.y*T + T/2 + Math.sin(t + i*0.8) * 2;
-    ctx.save(); ctx.translate(rx, ry);
-    ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI*2);
-    ctx.strokeStyle = P.dark; ctx.lineWidth = 3.5; ctx.stroke();
-    ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI*2);
-    ctx.strokeStyle = P.ring; ctx.lineWidth = 2; ctx.stroke();
-    ctx.fillStyle = P.ringHi;
-    ctx.fillRect(-1, -12, 2, 3);
-    ctx.restore();
+  // Checkpoints
+  LEVEL1.checkpoints.forEach(c => {
+    ctx.fillStyle = c.hit ? '#00ffcc' : '#ff0055';
+    ctx.fillRect(c.x - 6, c.y - 12, 12, 24);
   });
-}
 
-function drawCheckpoints(ctx){
-  (LV.checkpoints||[]).forEach(cp=>{
-    const cx = cp.x*T + T/2, cy = cp.y*T + T/2;
-    ctx.save(); ctx.translate(cx, cy); ctx.rotate(Math.PI/4);
-    const col = cp.hit ? P.cpDone : P.cp;
-    ctx.fillStyle = col; ctx.fillRect(-7, -7, 14, 14);
-    ctx.strokeStyle = P.dark; ctx.lineWidth = 1.5; ctx.strokeRect(-7, -7, 14, 14);
-    if(!cp.hit){ ctx.fillStyle = P.light; ctx.fillRect(-3, -3, 6, 6); }
-    ctx.restore();
+  // Inflator
+  LEVEL1.inflators.forEach(i => {
+    if (i.used) return;
+    ctx.fillStyle = '#ffcc00';
+    ctx.fillRect(i.x - 10, i.y - 4, 20, 8);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(i.x - 4, i.y - 16, 8, 12);
   });
-}
 
-function drawInflators(ctx){
-  (LV.inflators||[]).forEach(inf=>{
-    if(inf.used) return;
-    const ix = inf.x*T + T/2, iy = inf.y*T;
-    ctx.fillStyle = P.inflator;
-    ctx.fillRect(ix-2, iy+12, 4, T-12);
-    ctx.beginPath(); ctx.arc(ix, iy+8, 7, 0, Math.PI*2);
-    ctx.fillStyle = P.light; ctx.fill();
-    ctx.strokeStyle = P.inflator; ctx.lineWidth = 2; ctx.stroke();
-    ctx.fillStyle = P.dark;
-    ctx.fillRect(ix-1, iy+4, 2, 8); ctx.fillRect(ix-4, iy+7, 8, 2);
-  });
-}
+  // Finish Target Portal Gate
+  let ex = LEVEL1.exit.x, ey = LEVEL1.exit.y;
+  ctx.fillStyle = (ringsGot >= totalRings) ? '#00ff00' : '#777';
+  ctx.fillRect(ex - 15, ey - 30, 30, 30);
 
-function drawDeflators(ctx){
-  (LV.deflators||[]).forEach(def=>{
-    const dx = def.x*T + T/2, dy = def.y*T;
-    ctx.fillStyle = P.mid;
-    ctx.fillRect(dx-2, dy+12, 4, T-12);
-    ctx.beginPath(); ctx.arc(dx, dy+8, 7, 0, Math.PI*2);
-    ctx.fillStyle = P.mid; ctx.fill();
-    ctx.strokeStyle = P.dark; ctx.lineWidth = 2; ctx.stroke();
-    ctx.fillStyle = P.dark;
-    ctx.fillRect(dx-4, dy+7, 8, 2);
-  });
-}
-
-function drawExit(ctx){
-  if(!LV.exit) return;
-  const ex   = LV.exit;
-  const open = ringsGot >= LV.ringCount;
-  const dw = T, dh = T*2;
-  const dx = ex.x*T, dy = ex.y*T - T;
-
-  ctx.fillStyle = open ? P.light : P.mid;
-  ctx.fillRect(dx, dy, dw, dh);
-
-  ctx.fillStyle = P.dark;
-  ctx.fillRect(dx,        dy,           dw, 2);
-  ctx.fillRect(dx,        dy + dh/3,    dw, 2);
-  ctx.fillRect(dx,        dy + dh*2/3,  dw, 2);
-  ctx.fillRect(dx,        dy + dh - 2,  dw, 2);
-  ctx.fillRect(dx,        dy,           2,  dh);
-  ctx.fillRect(dx+dw-2,   dy,           2,  dh);
-
-  ctx.fillStyle = open ? P.dark : P.mid;
-  ctx.font = `bold ${Math.floor(T*0.35)}px monospace`;
-  ctx.textAlign = 'center';
-  ctx.fillText(open ? 'EXIT' : 'LOCK', dx + dw/2, dy - 5);
-}
-
-function drawBall(ctx){
-  const r = BR();
+  // Ball Actor Representation
   ctx.save();
   ctx.translate(B.x, B.y);
   ctx.rotate(B.angle);
-
-  // Ball rendering routines
   ctx.beginPath();
-  ctx.ellipse(0, r+1, r*0.7, 3, 0, 0, Math.PI*2);
-  ctx.fillStyle = 'rgba(0,0,0,0.15)'; ctx.fill();
+  ctx.arc(0, 0, B.radius, 0, Math.PI * 2);
+  ctx.fillStyle = '#ff3300'; ctx.fill();
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
+  // Texture shading lines matching screenshot spheres
+  ctx.fillStyle = '#fff'; ctx.fillRect(-B.radius*0.4, -B.radius*0.4, B.radius*0.3, B.radius*0.3);
+  ctx.restore();
 
-  const ps = Math.max(2, Math.floor(r/5));
-  const ballPixels = [
-    [0,0,1,1,1,0,0],
-    [0,1,3,3,2,1,0],
-    [1,3,3,2,2,1,1],
-    [1,3,2,2,1,1,1],
-    [1,2,2,1,1,1,1],
-    [0,1,1,1,1,1,0],
-    [0,0,1,1,1,0,0],
-  ];
-  const cols = [null, P.ball, P.ballSh, P.ballHi];
-  const px0 = Math.floor(-ballPixels[0].length/2 * ps);
-  const py0 = Math.floor(-ballPixels.length/2    * ps);
-  
-  ballPixels.forEach((row, ry)=>{
-    row.forEach((val, rx)=>{
-      if(!val) return;
-      ctx.fillStyle = cols[val] || P.ball;
-      ctx.fillRect(px0 + rx*ps, py0 + ry*ps, ps, ps);
-    });
-  });
-
-  ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI*2);
-  ctx.strokeStyle = P.dark; ctx.lineWidth = 1.5; ctx.stroke();
   ctx.restore();
 }
 
-// ================================================================
-//  INPUT HOOKS
-// ================================================================
-document.addEventListener('keydown', e=>{
-  if(e.key === 'ArrowLeft'  || e.key === 'a') K.L = true;
-  if(e.key === 'ArrowRight' || e.key === 'd') K.R = true;
-  if((e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w') && gState === 'playing') doJump();
-  if(e.key === 'Escape'){
-    if(gState === 'playing') pauseGame();
-    else if(gState === 'paused') resumeGame();
-  }
+// Keyboard Interface Bindings
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft' || e.key === 'a') K.L = true;
+  if (e.key === 'ArrowRight' || e.key === 'd') K.R = true;
+  if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w') doJump();
 });
-document.addEventListener('keyup', e=>{
-  if(e.key === 'ArrowLeft'  || e.key === 'a') K.L = false;
-  if(e.key === 'ArrowRight' || e.key === 'd') K.R = false;
+document.addEventListener('keyup', e => {
+  if (e.key === 'ArrowLeft' || e.key === 'a') K.L = false;
+  if (e.key === 'ArrowRight' || e.key === 'd') K.R = false;
 });
-
-window.addEventListener('resize', ()=>{
-  if(gState === 'playing' || gState === 'paused') resizeCanvas();
-});
-
-document.addEventListener('touchmove', e=> e.preventDefault(), {passive: false});
 </script>
 </body>
 </html>
+
